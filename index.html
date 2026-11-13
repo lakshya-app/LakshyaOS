@@ -2040,5 +2040,78 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
 })();
 </script>
 
+<script>
+/* LakshyaOS Phase 3 integration layer: 3A Foundation • 3B Ultimate OS • 3C Boards/Exams • 3D Connected workflow */
+(function(){
+  const KEY='lakshyaos_phase3_integration_v1';
+  const getP=()=>JSON.parse(localStorage.getItem(KEY)||'null')||{mode:'board',boardProgress:{},examProgress:{},lastSync:null};
+  const putP=p=>{p.lastSync=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(p));};
+
+  function phase3Profile(){
+    try{return JSON.parse(localStorage.getItem('lakshyaos_phase3_v1')||'null')||{board:'cbse',exam:'none'};}
+    catch(e){return {board:'cbse',exam:'none'};}
+  }
+  function labels(){
+    const p=phase3Profile();
+    const b=(window.BOARDS||[]).find(x=>x.id===p.board);
+    const e=(window.EXAMS||[]).find(x=>x.id===p.exam);
+    return {board:b?.name||p.board||'Board not selected',exam:p.exam==='none'?'No competitive exam':(e?.name||p.exam)};
+  }
+  function esc3i(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  window.setP3PlanningMode=function(mode){
+    const p=getP();p.mode=mode;putP(p);
+    if(typeof showToast==='function')showToast(mode==='board'?'Board curriculum is now the active planning layer':'Competitive exam is now the active planning layer');
+    if(typeof refreshCurrentView==='function')refreshCurrentView();
+  };
+
+  function dashboardPanel(){
+    const host=document.getElementById('view-dashboard'); if(!host||document.getElementById('p3-command-center'))return;
+    const l=labels(), p=getP();
+    const el=document.createElement('div');
+    el.id='p3-command-center';
+    el.className='academic-card mt-5 border-indigo-200 dark:border-indigo-900';
+    el.innerHTML='<div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-[10px] uppercase font-bold text-indigo-600">Study profile</span><h3 class="font-bold mt-1">Board + competitive target</h3><p class="text-xs text-slate-500 mt-1">'+esc3i(l.board)+' • '+esc3i(l.exam)+'</p></div><div class="flex flex-wrap gap-2"><button onclick="switchTab(\'universal\')" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Boards & Exams</button><button onclick="switchTab(\'ultimate\')" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Ultimate OS</button><button onclick="refreshCurrentLakshyaView()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">↻ Refresh</button></div></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4"><button onclick="setP3PlanningMode(\'board\')" class="text-left p-3 rounded-xl border '+(p.mode==='board'?'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30':'border-slate-200 dark:border-slate-700')+'"><b class="text-xs">📘 Board layer</b><div class="text-[10px] text-slate-500 mt-1">Syllabus, chapters and school preparation</div></button><button onclick="setP3PlanningMode(\'exam\')" class="text-left p-3 rounded-xl border '+(p.mode==='exam'?'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30':'border-slate-200 dark:border-slate-700')+'"><b class="text-xs">🎯 Exam layer</b><div class="text-[10px] text-slate-500 mt-1">Entrance target without replacing board progress</div></button><div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800"><b class="text-xs">🔗 Connected</b><div class="text-[10px] text-slate-500 mt-1">Scheduler, revision and study coach use the same profile</div></div></div>';
+    const first=host.firstElementChild; if(first)host.insertBefore(el,first); else host.appendChild(el);
+  }
+
+  const oldDashboard=window.renderDashboard;
+  window.renderDashboard=function(){if(typeof oldDashboard==='function')oldDashboard();dashboardPanel();};
+
+  const oldUltimate=window.renderUltimate;
+  window.renderUltimate=function(){
+    if(typeof oldUltimate==='function')oldUltimate();
+    const root=document.getElementById('view-ultimate'); if(!root||document.getElementById('p3-ultimate-link'))return;
+    const l=labels(), p=getP(), box=document.createElement('div');
+    box.id='p3-ultimate-link'; box.className='ultimate-card border-indigo-200 dark:border-indigo-900';
+    box.innerHTML='<div class="flex flex-wrap items-center justify-between gap-3"><div><span class="ultimate-chip">CONNECTED PROFILE</span><h3 class="font-bold mt-2">'+esc3i(l.board)+' • '+esc3i(l.exam)+'</h3><p class="text-xs text-slate-500 mt-1">Ultimate OS keeps board and entrance preparation separate while sharing revision, mistakes, mocks and scheduling signals.</p></div><div class="flex flex-wrap gap-2"><button onclick="switchTab(\'syllabus\')" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Syllabus</button><button onclick="switchTab(\'scheduler\')" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Scheduler</button><button onclick="switchTab(\'universal\')" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Profile</button></div></div>';
+    root.insertBefore(box,root.firstElementChild);
+  };
+
+  const oldAI=window.aiCoachAsk;
+  if(typeof oldAI==='function'){
+    window.aiCoachAsk=async function(){
+      const l=labels(), p=getP();
+      const input=document.getElementById('ai-prompt');
+      if(input) input.value='Context: Board='+l.board+'; Competitive target='+l.exam+'; Active planning layer='+p.mode+'.\n\n'+input.value;
+      return oldAI();
+    };
+  }
+
+  window.refreshPhase3Integration=function(){
+    const p=getP();p.lastSync=new Date().toISOString();putP(p);
+    if(typeof refreshCurrentView==='function')refreshCurrentView();
+    if(typeof showToast==='function')showToast('LakshyaOS profile, scheduler and study modules refreshed');
+  };
+
+  const oldRefresh=window.refreshCurrentView;
+  window.refreshCurrentView=function(){
+    if(typeof oldRefresh==='function')oldRefresh();
+    setTimeout(()=>{if(appState?.activeTab==='dashboard')dashboardPanel();if(appState?.activeTab==='ultimate'&&typeof window.renderUltimate==='function')window.renderUltimate();},0);
+  };
+
+  window.addEventListener('load',()=>setTimeout(()=>{if(appState?.activeTab==='dashboard')dashboardPanel();},50));
+})();
+</script>
 </body>
 </html>
