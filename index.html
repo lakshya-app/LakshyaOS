@@ -2111,6 +2111,37 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
     setTimeout(()=>{if(appState?.activeTab==='dashboard')dashboardPanel();if(appState?.activeTab==='ultimate'&&typeof window.renderUltimate==='function')window.renderUltimate();},0);
   };
 
+  function syncProfileToCore(){
+    try{
+      const p=phase3Profile();
+      appState.boardSystem=p.board||'cbse';
+      appState.competitiveTarget=p.exam||'none';
+      appState.phase3PlanningMode=getP().mode||'board';
+      saveState();
+    }catch(e){}
+  }
+  const oldSetBoard=window.setPhase3Board, oldSetExam=window.setPhase3Exam;
+  window.setPhase3Board=function(id){if(typeof oldSetBoard==='function')oldSetBoard(id);syncProfileToCore();};
+  window.setPhase3Exam=function(id){if(typeof oldSetExam==='function')oldSetExam(id);syncProfileToCore();};
+  function addConnectedBanner(viewId){
+    const host=document.getElementById(viewId);if(!host)return;
+    const id='p3-banner-'+viewId;if(document.getElementById(id))return;
+    const l=labels(),p=getP(),el=document.createElement('div');el.id=id;
+    el.className='mx-0 mb-4 rounded-xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/70 dark:bg-indigo-950/20 p-3';
+    el.innerHTML='<div class="flex flex-wrap items-center justify-between gap-2"><div><b class="text-xs">Connected study profile</b><div class="text-[10px] text-slate-500 mt-1">'+esc3i(l.board)+' • '+esc3i(l.exam)+' • Active layer: '+esc3i(p.mode)+'</div></div><div class="flex gap-2"><button onclick="switchTab(\'universal\')" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-[10px] font-bold">Change profile</button><button onclick="refreshPhase3Integration()" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-[10px] font-bold">↻ Sync</button></div></div>';
+    host.insertBefore(el,host.firstElementChild);
+  }
+  const oldRefresh2=window.refreshCurrentView;
+  window.refreshCurrentView=function(){
+    syncProfileToCore();
+    if(typeof oldRefresh2==='function')oldRefresh2();
+    setTimeout(()=>{
+      if(appState?.activeTab==='dashboard')dashboardPanel();
+      if(appState?.activeTab==='ultimate'&&typeof window.renderUltimate==='function')window.renderUltimate();
+      if(['scheduler','syllabus','focus','ncert'].includes(appState?.activeTab))addConnectedBanner('view-'+appState.activeTab);
+    },0);
+  };
+  syncProfileToCore();
   window.addEventListener('load',()=>setTimeout(()=>{if(appState?.activeTab==='dashboard')dashboardPanel();},50));
 })();
 </script>
