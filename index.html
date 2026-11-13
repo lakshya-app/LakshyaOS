@@ -1581,5 +1581,110 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 </script>
 
-</body>
+
+<!-- LAKSHYAOS ULTIMATE STUDY OS -->
+<style>
+#ultimate-grid{grid-template-columns:repeat(1,minmax(0,1fr))}
+@media(min-width:768px){#ultimate-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1280px){#ultimate-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ultimate-card{border:1px solid rgb(226 232 240);border-radius:1rem;background:#fff;padding:1rem;box-shadow:0 1px 2px rgb(15 23 42/.04)}
+.dark .ultimate-card{background:#0f172a;border-color:#1e293b}
+.ultimate-chip{display:inline-flex;align-items:center;padding:.2rem .5rem;border-radius:999px;font-size:.68rem;font-weight:700;background:#eef2ff;color:#4338ca}
+.dark .ultimate-chip{background:#1e1b4b;color:#c7d2fe}
+.ultimate-bar{height:.45rem;border-radius:999px;background:#e2e8f0;overflow:hidden}.ultimate-bar>i{display:block;height:100%;background:#6366f1;border-radius:inherit}
+</style>
+
+<div id="ai-drawer" class="fixed inset-y-0 right-0 z-[90] hidden w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-5 overflow-y-auto">
+  <div class="flex items-center justify-between mb-4"><div><h3 class="font-bold">🤖 AI Study Coach</h3><p class="text-xs text-slate-500">BYOK • key stays in this browser</p></div><button onclick="closeAIDrawer()" class="text-xl">✕</button></div>
+  <div class="space-y-3">
+    <input id="ai-api-key" type="password" autocomplete="off" placeholder="Gemini API key" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs">
+    <div class="flex gap-2 items-center text-xs"><label><input id="ai-remember-key" type="checkbox" class="mr-1"> Remember on this device</label><button onclick="clearAIKey()" class="ml-auto text-indigo-600">Clear</button></div>
+    <input id="ai-model" value="gemini-2.5-flash" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs" placeholder="Gemini model">
+    <textarea id="ai-prompt" rows="5" placeholder="Ask about your backlog, a chapter, notes, or strategy..." class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs"></textarea>
+    <div class="flex flex-wrap gap-2"><button onclick="aiCoachAsk()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Ask Coach</button><button onclick="aiSummarizeNotes()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Summarize Notes</button><button onclick="aiBacklogPlan()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Backlog Plan</button></div>
+    <div id="ai-output" class="min-h-32 whitespace-pre-wrap rounded-xl bg-slate-50 dark:bg-slate-800 p-3 text-xs leading-5">Your AI response will appear here.</div>
+  </div>
+</div>
+
+<div id="quiz-modal" class="fixed inset-0 z-[85] hidden bg-slate-950/70 backdrop-blur-sm p-4 items-center justify-center">
+ <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5">
+  <div class="flex justify-between gap-3"><div><h3 id="quiz-title" class="font-bold">Micro Quiz</h3><p id="quiz-subtitle" class="text-xs text-slate-500"></p></div><button onclick="closeMicroQuiz()">✕</button></div>
+  <div id="quiz-body" class="mt-4 space-y-4"></div>
+ </div>
+</div>
+
+<script>
+(function(){
+const UKEY='lakshyaos_ultimate_v1';
+let U=JSON.parse(localStorage.getItem(UKEY)||'null')||{
+ mastery:{}, practicals:{}, mocks:[], mistakes:[], capacity:{weekday:4,weekend:9}, completions:{}, top3:{},
+ revision:[], quizScore:0
+};
+function saveU(){localStorage.setItem(UKEY,JSON.stringify(U));}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function chapters(){return Array.isArray(appState.chapters)?appState.chapters:[];}
+function currentCh(){return chapters().find(c=>c.id===U._chapter)||chapters()[0];}
+window.openAIDrawer=()=>{document.getElementById('ai-drawer').classList.remove('hidden');let k=sessionStorage.getItem('lakshya_ai_key')||localStorage.getItem('lakshya_ai_key')||'';document.getElementById('ai-api-key').value=k;document.getElementById('ai-remember-key').checked=!!localStorage.getItem('lakshya_ai_key');};
+window.closeAIDrawer=()=>document.getElementById('ai-drawer').classList.add('hidden');
+window.clearAIKey=()=>{sessionStorage.removeItem('lakshya_ai_key');localStorage.removeItem('lakshya_ai_key');document.getElementById('ai-api-key').value='';};
+function aiContext(){let c=chapters();return 'Syllabus: '+c.map(x=>x.name+' ['+x.status+']').join('; ')+'\nRemaining chapters: '+c.filter(x=>x.status!=='completed').length+'\nDaily capacity weekday/weekend: '+U.capacity.weekday+'/'+U.capacity.weekend+' hours';}
+async function callGemini(prompt){
+ const key=document.getElementById('ai-api-key').value.trim(); const model=document.getElementById('ai-model').value.trim()||'gemini-2.5-flash';
+ if(!key) throw new Error('Add your Gemini API key first.');
+ if(document.getElementById('ai-remember-key').checked)localStorage.setItem('lakshya_ai_key',key); else {sessionStorage.setItem('lakshya_ai_key',key);localStorage.removeItem('lakshya_ai_key');}
+ const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+ const data=await res.json(); if(!res.ok) throw new Error(data?.error?.message||'Gemini request failed');
+ return data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('\n')||'No response returned.';
+}
+window.aiCoachAsk=async()=>{let o=document.getElementById('ai-output');o.textContent='Thinking...';try{o.textContent=await callGemini('You are a concise exam study coach. '+aiContext()+'\nUser: '+document.getElementById('ai-prompt').value);}catch(e){o.textContent=e.message;}};
+window.aiBacklogPlan=async()=>{document.getElementById('ai-prompt').value='Give me a prioritized 7-day backlog recovery plan using my remaining syllabus, target date, and available capacity. Prefer high-yield chapters and spaced revision.';await aiCoachAsk();};
+window.aiSummarizeNotes=async()=>{let c=currentCh();let notes=appState.chapterNotes?.[c?.id]||'';document.getElementById('ai-prompt').value='Summarize these notes into 8 exam-ready bullets and 5 recall questions:\n'+notes;await aiCoachAsk();};
+
+const qs=[
+['Concept Check','Which action best reduces an electrostatics calculation error?',['Draw the field/potential relation first','Skip units','Round every value immediately','Ignore sign conventions'],0],
+['PYQ Strategy','What is the best first move when a PYQ exposes a repeated weak concept?',['Log the concept and schedule targeted practice','Delete the question','Only reread the chapter title','Avoid similar questions'],0],
+['Revision','Which sequence matches the built-in spaced repetition plan?',['1-4-7-21 days','2-5-10-30 days','1-7-14-28 days','3-6-9-12 days'],0],
+['Numerical Habit','Before submitting a numerical answer, what should you verify?',['Units, sign and magnitude','Only the final digit','Only the calculator display','Nothing if the method looks right'],0]
+];
+window.openMicroQuiz=(id)=>{U._chapter=id;saveU();let c=chapters().find(x=>x.id===id)||chapters()[0];let chosen=qs.slice(0,4);document.getElementById('quiz-title').textContent='Micro Quiz: '+c.name;document.getElementById('quiz-subtitle').textContent='4 quick CBSE/JEE-style checks • '+(c.subject||'');document.getElementById('quiz-body').innerHTML=chosen.map((q,i)=>'<div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="font-semibold text-sm">'+(i+1)+'. '+esc(q[1])+'</p><div class="mt-2 space-y-2">'+q[2].map((a,j)=>'<label class="block text-xs p-2 rounded-lg bg-slate-50 dark:bg-slate-800"><input type="radio" name="uq'+i+'" value="'+j+'" class="mr-2">'+esc(a)+'</label>').join('')+'</div></div>').join('')+'<button onclick="gradeMicroQuiz()" class="w-full mt-2 px-4 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold">Check Answers</button>';document.getElementById('quiz-modal').classList.remove('hidden');document.getElementById('quiz-modal').classList.add('flex');};
+window.closeMicroQuiz=()=>{let e=document.getElementById('quiz-modal');e.classList.add('hidden');e.classList.remove('flex');};
+window.gradeMicroQuiz=()=>{let score=0;qs.slice(0,4).forEach((q,i)=>{let v=document.querySelector('input[name="uq'+i+'"]:checked');if(v&&+v.value===q[3])score++;});U.quizScore=score;saveU();showToast('Micro quiz: '+score+'/4');};
+window.mastery=(id)=>{let m=U.mastery[id]||[false,false,false,false];m=[...m];m[event.target.checked?event.target.dataset.i:event.target.dataset.i]=event.target.checked;U.mastery[id]=m;saveU();renderUltimate();};
+window.addRevision=(id,offset)=>{let d=new Date();d.setDate(d.getDate()+offset);U.revision.push({id,due:d.toISOString().slice(0,10),type:'1-4-7-21'});saveU();};
+window.markChapterComplete=(id)=>{let c=chapters().find(x=>x.id===id);if(!c)return;c.status='completed';[1,4,7,21].forEach(x=>addRevision(id,x));saveState();renderUltimate();showToast('Completed '+c.name+' • revisions queued');};
+window.addMistake=()=>{let text=document.getElementById('mistake-text').value.trim(),type=document.getElementById('mistake-type').value;if(!text)return;U.mistakes.unshift({text,type,date:new Date().toISOString().slice(0,10)});document.getElementById('mistake-text').value='';saveU();renderUltimate();};
+window.addMock=()=>{let name=document.getElementById('mock-name').value.trim()||'Mock Test',score=+document.getElementById('mock-score').value||0,total=+document.getElementById('mock-total').value||100,acc=+document.getElementById('mock-acc').value||0;U.mocks.push({name,score,total,acc,date:new Date().toISOString().slice(0,10)});saveU();renderUltimate();};
+window.saveTop3=()=>{U.top3={date:new Date().toISOString().slice(0,10),items:[1,2,3].map(i=>document.getElementById('top3-'+i).value)};saveU();showToast('Top 3 saved');};
+window.saveCapacity=()=>{U.capacity.weekday=+document.getElementById('cap-weekday').value||4;U.capacity.weekend=+document.getElementById('cap-weekend').value||9;saveU();showToast('Study capacity updated');};
+window.rebalance=()=>{let days=Math.max(1,Math.ceil((new Date(appState.scheduler.targetDate)-new Date())/86400000));let remaining=chapters().filter(c=>c.status!=='completed').reduce((s,c)=>s+(+c.estHours||0),0);let avg=remaining/days;appState.scheduler.dailyHours=Math.min(U.capacity.weekday,Math.max(1,+avg.toFixed(1)));saveState();showToast('Scheduler rebalanced to '+appState.scheduler.dailyHours+'h/day');if(typeof generateSchedule==='function')generateSchedule();};
+window.renderUltimate=()=>{
+ let root=document.getElementById('view-ultimate');if(!root)return;
+ let cs=chapters(),done=cs.filter(c=>c.status==='completed').length, due=U.revision.filter(r=>r.due<=new Date().toISOString().slice(0,10)).length;
+ let top=U.top3.items||['','',''];
+ root.innerHTML='<div class="space-y-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="ultimate-chip">ULTIMATE STUDY OS</span><h2 class="text-2xl font-extrabold mt-2">Everything you need to stay exam-ready.</h2><p class="text-xs text-slate-500 mt-1">'+done+'/'+cs.length+' chapters complete • '+due+' revisions due • '+U.mistakes.length+' logged traps</p></div><div class="flex gap-2"><button onclick="openAIDrawer()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">🤖 AI Coach</button><button onclick="rebalance()" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold">↻ Rebalance</button></div></div>'+
+ '<div class="ultimate-card"><div class="flex items-center justify-between"><div><h3 class="font-bold">🎯 Daily Top 3 Non-Negotiables</h3><p class="text-xs text-slate-500">Keep the daily target small and concrete.</p></div><button onclick="saveTop3()" class="text-xs font-bold text-indigo-600">Save</button></div><div class="grid md:grid-cols-3 gap-2 mt-3">'+[1,2,3].map(i=>'<input id="top3-'+i+'" value="'+esc(top[i-1]||'')+'" placeholder="'+i+'. Priority" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs">').join('')+'</div></div>'+
+ '<div id="ultimate-grid" class="grid gap-4">'+
+ '<div class="ultimate-card"><h3 class="font-bold">🧠 4-Stage Chapter Mastery</h3><p class="text-xs text-slate-500 mt-1">NCERT → Module/Reference → PYQs → Formula/Short Notes.</p><div class="mt-3 space-y-2 max-h-80 overflow-y-auto">'+cs.map(c=>{let m=U.mastery[c.id]||[false,false,false,false];return '<div class="border-b border-slate-100 dark:border-slate-800 pb-2"><div class="flex gap-2 items-center"><span class="text-xs font-semibold flex-1">'+esc(c.name)+'</span><button onclick="openMicroQuiz(\''+c.id+'\')" class="text-[10px] text-indigo-600">Quiz</button></div><div class="grid grid-cols-2 gap-1 mt-1">'+['NCERT','Module / HCV / Cengage','PYQs','Formula / Short Notes'].map((x,i)=>'<label class="text-[10px]"><input type="checkbox" data-i="'+i+'" '+(m[i]?'checked':'')+' onchange="U.mastery[\''+c.id+'\']=[...U.mastery[\''+c.id+'\']||[false,false,false,false]];U.mastery[\''+c.id+'\']['+i+']=this.checked;saveU();renderUltimate()"> '+x+'</label>').join('')+'</div></div>'}).join('')+'</div></div>'+
+ '<div class="ultimate-card"><h3 class="font-bold">🧪 Practicals & Viva Tracker</h3><p class="text-xs text-slate-500">Track school practical/project readiness.</p><div class="grid grid-cols-2 gap-2 mt-3">'+['Physics experiments','Chemistry experiments','IP Python/MySQL project','Painting portfolio sheets'].map((x,i)=>'<label class="text-xs">'+x+'<input type="number" min="0" value="'+(U.practicals[i]||0)+'" onchange="U.practicals['+i+']=+this.value;saveU()" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-2"></label>').join('')+'</div></div>'+
+ '<div class="ultimate-card"><h3 class="font-bold">📈 Mock Test Analytics</h3><div class="grid grid-cols-2 gap-2 mt-3"><input id="mock-name" placeholder="Test name" class="rounded-lg border px-2 py-2 text-xs"><input id="mock-score" type="number" placeholder="Score" class="rounded-lg border px-2 py-2 text-xs"><input id="mock-total" type="number" value="100" placeholder="Total" class="rounded-lg border px-2 py-2 text-xs"><input id="mock-acc" type="number" min="0" max="100" placeholder="Accuracy %" class="rounded-lg border px-2 py-2 text-xs"></div><button onclick="addMock()" class="mt-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Log Mock</button><div class="mt-3 space-y-2">'+U.mocks.slice(-8).map(m=>'<div class="text-xs"><div class="flex justify-between"><span>'+esc(m.name)+'</span><b>'+m.score+'/'+m.total+' • '+m.acc+'%</b></div><div class="ultimate-bar mt-1"><i style="width:'+Math.min(100,m.score/m.total*100)+'%"></i></div></div>').join('')+'</div></div>'+
+ '<div class="ultimate-card"><h3 class="font-bold">⚠️ Silly Mistake & Weak Concept Vault</h3><div class="flex gap-2 mt-3"><select id="mistake-type" class="rounded-lg border px-2 py-2 text-xs"><option>Calculation</option><option>Concept</option><option>Sign / Units</option><option>SQL / Coding</option><option>Other</option></select><input id="mistake-text" placeholder="What went wrong?" class="flex-1 rounded-lg border px-2 py-2 text-xs"><button onclick="addMistake()" class="px-3 rounded-lg bg-rose-600 text-white text-xs font-bold">+</button></div><div class="mt-3 max-h-40 overflow-y-auto space-y-1">'+U.mistakes.slice(0,12).map(m=>'<div class="text-xs p-2 rounded-lg bg-slate-50 dark:bg-slate-800"><b>'+esc(m.type)+':</b> '+esc(m.text)+' <span class="text-slate-400">('+m.date+')</span></div>').join('')+'</div></div>'+
+ '<div class="ultimate-card"><h3 class="font-bold">⏱️ Weekday vs Weekend Capacity</h3><div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs">School day hours<input id="cap-weekday" type="number" min="1" max="16" step=".5" value="'+U.capacity.weekday+'" class="mt-1 w-full rounded-lg border px-2 py-2"></label><label class="text-xs">Weekend/holiday hours<input id="cap-weekend" type="number" min="1" max="16" step=".5" value="'+U.capacity.weekend+'" class="mt-1 w-full rounded-lg border px-2 py-2"></label></div><button onclick="saveCapacity()" class="mt-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold">Save Capacity</button></div>'+
+ '<div class="ultimate-card"><h3 class="font-bold">🔁 Spaced Repetition Queue</h3><p class="text-xs text-slate-500 mt-1">Completion automatically creates 1, 4, 7 and 21-day recall slots.</p><div class="mt-3 space-y-1">'+U.revision.filter(r=>r.due<=new Date().toISOString().slice(0,10)).slice(0,10).map(r=>{let c=cs.find(x=>x.id===r.id);return '<div class="text-xs p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40">'+esc(c?.name||'Chapter')+' • '+r.due+' • 15 min active recall</div>'}).join('')+'</div></div>'+
+ '</div></div>';
+};
+const oldSwitch=window.switchTab;
+window.switchTab=function(tab){oldSwitch(tab);if(tab==='ultimate')renderUltimate();};
+const nav=document.querySelector('header > div:last-child');
+if(nav&&!document.getElementById('tab-ultimate'))nav.insertAdjacentHTML('beforeend','<button onclick="switchTab(\'ultimate\')" id="tab-ultimate" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">🚀 Ultimate OS</button>');
+const main=document.getElementById('main-content-pane');
+if(main&&!document.getElementById('view-ultimate')){main.insertAdjacentHTML('beforeend','<section id="view-ultimate" class="hidden space-y-6"></section>');}
+window.addEventListener('load',()=>{try{renderUltimate();}catch(e){console.error(e)}});
+
+// Intercept chapter completion so 1-4-7-21 is created when existing UI marks a chapter complete.
+const oldUpdate=window.updateChapterStatus;
+if(typeof oldUpdate==='function'&&!oldUpdate.__ultimateWrapped){window.updateChapterStatus=function(id,status){oldUpdate(id,status);if(status==='completed') [1,4,7,21].forEach(x=>addRevision(id,x));saveU();};window.updateChapterStatus.__ultimateWrapped=true;}
+})();
+</script>
+<!-- END LAKSHYAOS ULTIMATE STUDY OS -->
+\n</body>
 </html>
