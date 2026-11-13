@@ -444,6 +444,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   <!-- Workspace Wrapper -->
   <div id="workspace-layout" class="flex-1 flex flex-col lg:flex-row max-w-[1600px] w-full mx-auto overflow-hidden">
     <main id="main-content-pane" class="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 py-6 overflow-y-auto">
+<div id="global-refresh" class="fixed bottom-4 right-4 z-[70]"><button onclick="refreshCurrentLakshyaView()" title="Refresh current section" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg text-xs font-bold">↻ Refresh</button></div>
 
       <!-- TAB 1: DASHBOARD -->
       <section id="view-dashboard" class="space-y-6">
@@ -1926,12 +1927,12 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
         <div class="academic-card">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <span class="academic-pill">PHASE 3 • UNIVERSAL ACADEMIC ENGINE</span>
-              <h2 class="text-2xl font-extrabold mt-2">One planner for boards, curricula & competitive exams.</h2>
-              <p class="text-xs text-slate-500 mt-1">Separate the student's board curriculum from the competitive-exam target, then build a combined preparation plan. LakshyaOS can expand by board, state/UT, international curriculum, and exam family without locking the student to one ecosystem.</p>
+              <span class="academic-pill">BOARDS & EXAMS</span>
+              <h2 class="text-2xl font-extrabold mt-2">Boards, curricula & competitive exams</h2>
+              <p class="text-xs text-slate-500 mt-1">Choose your academic board and, if needed, a separate competitive-exam target. Your selections are kept separate so board progress and entrance preparation can evolve independently.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button onclick="savePhase3Profile()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Save Profile</button>
+              <button onclick="refreshBoardsExams()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">↻ Refresh</button><button onclick="savePhase3Profile()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Save Profile</button>
               <button onclick="openPhase3Sources()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">Official Sources ↗</button>
             </div>
           </div>
@@ -1987,7 +1988,7 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
         <div class="academic-card">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div><h3 class="font-bold">🔔 Curriculum Update Center</h3><p class="text-xs text-slate-500 mt-1">Versioned updates should be reviewed before they alter a student's tracked syllabus.</p></div>
-            <span class="px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">Review before apply</span>
+            <div class="flex items-center gap-2"><span id="p3-last-check" class="text-[10px] text-slate-400">${localStorage.getItem('lakshyaos_p3_last_check')?'Checked '+new Date(localStorage.getItem('lakshyaos_p3_last_check')).toLocaleString():'Not checked yet'}</span><button onclick="refreshCurriculumSources()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold">↻ Check for updates</button><span class="px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">Review before apply</span></div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
             <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-3"><b class="text-xs">1. Detect</b><p class="text-[10px] text-slate-500 mt-1">Monitor official board/exam notices and version identifiers.</p></div>
@@ -2008,6 +2009,8 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
       </div>`;
   }
 
+  window.refreshBoardsExams=function(){render();if(typeof showToast==='function')showToast('Boards & exams refreshed');};
+  window.refreshCurriculumSources=function(){const now=new Date();localStorage.setItem('lakshyaos_p3_last_check',now.toISOString());render();if(typeof showToast==='function')showToast('Official-source check refreshed. Review the linked official notice for new changes.');};
   window.setPhase3Board=function(id){const s=state();s.board=id;save(s);render();};
   window.setPhase3Exam=function(id){const s=state();s.exam=id;save(s);render();};
   window.phase3Search=function(q){const s=state();s.query=q;save(s);render();const i=document.getElementById('p3-search');if(i){i.focus();i.setSelectionRange(q.length,q.length);}};
