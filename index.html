@@ -1825,5 +1825,181 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
 })();
 </script>
 
+
+<script>
+/* ---------- LakshyaOS Phase 3: Universal Boards + Competitive Exams Engine ---------- */
+(function(){
+  const PHASE3_KEY='lakshyaos_phase3_v1';
+
+  const BOARDS=[
+    {id:'cbse',name:'CBSE',type:'National',scope:'Classes 6–12',source:'CBSE Academic Portal',url:'https://cbseacademic.nic.in/'},
+    {id:'cisce',name:'CISCE — ICSE / ISC',type:'National',scope:'ICSE / ISC',source:'CISCE',url:'https://cisce.org/'},
+    {id:'nios',name:'NIOS',type:'National Open School',scope:'Secondary / Senior Secondary',source:'NIOS',url:'https://www.nios.ac.in/'},
+    {id:'maharashtra',name:'Maharashtra State Board',type:'State',scope:'SSC / HSC',source:'MSBSHSE',url:'https://mahahsscboard.in/'},
+    {id:'bihar',name:'Bihar Board',type:'State',scope:'Matric / Intermediate',source:'BSEB',url:'https://secondary.biharboardonline.com/'},
+    {id:'up',name:'Uttar Pradesh Board',type:'State',scope:'Classes 9–12',source:'UPMSP',url:'https://upmsp.edu.in/'},
+    {id:'rajasthan',name:'Rajasthan Board',type:'State',scope:'Secondary / Senior Secondary',source:'RBSE',url:'https://rajeduboard.rajasthan.gov.in/'},
+    {id:'mp',name:'Madhya Pradesh Board',type:'State',scope:'Secondary / Higher Secondary',source:'MPBSE',url:'https://mpbse.nic.in/'},
+    {id:'gujarat',name:'Gujarat Board',type:'State',scope:'SSC / HSC',source:'GSEB',url:'https://www.gseb.org/'},
+    {id:'karnataka',name:'Karnataka Board',type:'State',scope:'SSLC / PUC',source:'KSEAB',url:'https://kseab.karnataka.gov.in/'},
+    {id:'tamilnadu',name:'Tamil Nadu Board',type:'State',scope:'SSLC / HSC',source:'DGE Tamil Nadu',url:'https://www.dge.tn.gov.in/'},
+    {id:'telangana',name:'Telangana Board',type:'State',scope:'SSC / Intermediate',source:'Telangana Board',url:'https://www.bse.telangana.gov.in/'},
+    {id:'andhra',name:'Andhra Pradesh Board',type:'State',scope:'SSC / Intermediate',source:'AP Board',url:'https://www.bse.ap.gov.in/'},
+    {id:'kerala',name:'Kerala Board',type:'State',scope:'SSLC / Plus One / Plus Two',source:'Kerala General Education',url:'https://education.kerala.gov.in/'},
+    {id:'westbengal',name:'West Bengal Board',type:'State',scope:'Madhyamik / HS',source:'West Bengal Boards',url:'https://wbbse.wb.gov.in/'},
+    {id:'odisha',name:'Odisha Board',type:'State',scope:'HSC / Higher Secondary',source:'BSE Odisha',url:'https://bseodisha.nic.in/'},
+    {id:'punjab',name:'Punjab School Education Board',type:'State',scope:'Secondary / Senior Secondary',source:'PSEB',url:'https://pseb.ac.in/'},
+    {id:'haryana',name:'Haryana Board',type:'State',scope:'Secondary / Senior Secondary',source:'HBSE',url:'https://bseh.org.in/'},
+    {id:'jharkhand',name:'Jharkhand Academic Council',type:'State',scope:'Secondary / Senior Secondary',source:'JAC',url:'https://jac.jharkhand.gov.in/'},
+    {id:'chhattisgarh',name:'Chhattisgarh Board',type:'State',scope:'High School / Higher Secondary',source:'CGBSE',url:'https://cgbse.nic.in/'},
+    {id:'ib',name:'IB — International Baccalaureate',type:'International',scope:'MYP / DP',source:'IB',url:'https://www.ibo.org/'},
+    {id:'cambridge',name:'Cambridge International',type:'International',scope:'IGCSE / AS & A Level',source:'Cambridge International',url:'https://www.cambridgeinternational.org/'}
+  ];
+
+  const EXAMS=[
+    {id:'jee-main',name:'JEE Main',group:'Engineering',organizer:'NTA',classes:'11–12+',url:'https://jeemain.nta.nic.in/'},
+    {id:'jee-advanced',name:'JEE Advanced',group:'Engineering',organizer:'IITs',classes:'12+',url:'https://jeeadv.ac.in/'},
+    {id:'neet-ug',name:'NEET UG',group:'Medical',organizer:'NTA',classes:'11–12+',url:'https://exams.nta.nic.in/neet/'},
+    {id:'cuet-ug',name:'CUET UG',group:'University',organizer:'NTA',classes:'12+',url:'https://exams.nta.nic.in/cuet-ug/'},
+    {id:'clat',name:'CLAT',group:'Law',organizer:'Consortium of NLUs',classes:'12+',url:'https://consortiumofnlus.ac.in/'},
+    {id:'nata',name:'NATA',group:'Architecture',organizer:'Council of Architecture',classes:'12+',url:'https://www.nata.in/'},
+    {id:'nda',name:'NDA & NA',group:'Defence / National Entrance',organizer:'UPSC',classes:'12+',url:'https://upsc.gov.in/'},
+    {id:'uceed',name:'UCEED',group:'Design',organizer:'IIT Bombay',classes:'12+',url:'https://www.uceed.iitb.ac.in/'},
+    {id:'ceed',name:'CEED',group:'Design',organizer:'IIT Bombay',classes:'Graduate',url:'https://www.ceed.iitb.ac.in/'},
+    {id:'iat',name:'IISER Aptitude Test',group:'Science',organizer:'IISERs',classes:'12+',url:'https://www.iiseradmission.in/'},
+    {id:'nest',name:'NEST',group:'Science',organizer:'NISER / UM-DAE CEBS',classes:'12+',url:'https://nestexam.in/'},
+    {id:'nift',name:'NIFTEE / NIFT Entrance',group:'Fashion / Design',organizer:'NTA / NIFT',classes:'12+',url:'https://exams.nta.ac.in/NIFT/'},
+    {id:'olympiads',name:'Science / Maths Olympiad Path',group:'Olympiads',organizer:'Multiple official bodies',classes:'6–12',url:'https://olympiads.hbcse.tifr.res.in/'}
+  ];
+
+  const state=()=>{try{return JSON.parse(localStorage.getItem(PHASE3_KEY)||'{}')}catch(e){return {}}};
+  const save=x=>localStorage.setItem(PHASE3_KEY,JSON.stringify(x));
+  const esc3=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+  function render(){
+    const root=document.getElementById('view-universal');
+    if(!root)return;
+    const s=state();
+    const board=s.board||'cbse', exam=s.exam||'jee-main', q=(s.query||'').toLowerCase();
+    const b=BOARDS.find(x=>x.id===board)||BOARDS[0], e=EXAMS.find(x=>x.id===exam)||EXAMS[0];
+    const filteredBoards=BOARDS.filter(x=>(x.name+' '+x.type+' '+x.scope).toLowerCase().includes(q));
+    const filteredExams=EXAMS.filter(x=>(x.name+' '+x.group+' '+x.organizer).toLowerCase().includes(q));
+
+    root.innerHTML=`
+      <div class="space-y-5">
+        <div class="academic-card">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <span class="academic-pill">PHASE 3 • UNIVERSAL ACADEMIC ENGINE</span>
+              <h2 class="text-2xl font-extrabold mt-2">One planner for boards, curricula & competitive exams.</h2>
+              <p class="text-xs text-slate-500 mt-1">Separate the student's board curriculum from the competitive-exam target, then build a combined preparation plan.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="savePhase3Profile()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Save Profile</button>
+              <button onclick="openPhase3Sources()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">Official Sources ↗</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+            <label class="text-xs font-semibold">Board / School System
+              <select id="p3-board" onchange="setPhase3Board(this.value)" class="mt-1 w-full rounded-xl border px-3 py-2 bg-slate-50 dark:bg-slate-800">
+                ${BOARDS.map(x=>`<option value="${x.id}" ${x.id===board?'selected':''}>${esc3(x.name)}</option>`).join('')}
+              </select>
+            </label>
+            <label class="text-xs font-semibold">Competitive / Entrance Target
+              <select id="p3-exam" onchange="setPhase3Exam(this.value)" class="mt-1 w-full rounded-xl border px-3 py-2 bg-slate-50 dark:bg-slate-800">
+                <option value="none" ${exam==='none'?'selected':''}>No competitive exam</option>
+                ${EXAMS.map(x=>`<option value="${x.id}" ${x.id===exam?'selected':''}>${esc3(x.name)}</option>`).join('')}
+              </select>
+            </label>
+            <label class="text-xs font-semibold">Search
+              <input id="p3-search" value="${esc3(s.query||'')}" oninput="phase3Search(this.value)" placeholder="Board, exam, subject..." class="mt-1 w-full rounded-xl border px-3 py-2 bg-slate-50 dark:bg-slate-800">
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+            <div class="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 p-3"><div class="text-[10px] uppercase font-bold text-indigo-500">Selected board</div><b class="text-sm">${esc3(b.name)}</b><p class="text-[10px] text-slate-500 mt-1">${esc3(b.scope)} • ${esc3(b.type)}</p></div>
+            <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-3"><div class="text-[10px] uppercase font-bold text-emerald-600">Selected target</div><b class="text-sm">${exam==='none'?'No competitive target':esc3(e.name)}</b><p class="text-[10px] text-slate-500 mt-1">${exam==='none'?'Board-first planning':esc3(e.group+' • '+e.organizer)}</p></div>
+            <div class="rounded-xl bg-amber-50 dark:bg-amber-950/30 p-3"><div class="text-[10px] uppercase font-bold text-amber-600">Planning model</div><b class="text-sm">Dual-track</b><p class="text-[10px] text-slate-500 mt-1">Board mastery + entrance preparation without overwriting progress.</p></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="academic-card">
+            <div class="flex items-center justify-between gap-2"><div><h3 class="font-bold">🏫 Board Coverage</h3><p class="text-xs text-slate-500">Choose from national, state, open-school and international systems.</p></div><span class="text-[10px] font-bold text-slate-400">${filteredBoards.length} shown</span></div>
+            <div class="mt-3 space-y-2 max-h-96 overflow-y-auto">
+              ${filteredBoards.map(x=>`<button onclick="setPhase3Board('${x.id}')" class="w-full text-left p-3 rounded-xl border ${x.id===board?'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30':'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'}"><div class="flex items-center justify-between gap-2"><b class="text-xs">${esc3(x.name)}</b><span class="text-[9px] px-2 py-1 rounded-full bg-white/70 dark:bg-slate-900">${esc3(x.type)}</span></div><div class="text-[10px] text-slate-500 mt-1">${esc3(x.scope)} • Source: ${esc3(x.source)}</div></button>`).join('')}
+            </div>
+          </div>
+
+          <div class="academic-card">
+            <div class="flex items-center justify-between gap-2"><div><h3 class="font-bold">🎓 Competitive Exam Coverage</h3><p class="text-xs text-slate-500">Keep entrance preparation as a separate layer over the board plan.</p></div><span class="text-[10px] font-bold text-slate-400">${filteredExams.length} shown</span></div>
+            <div class="mt-3 space-y-2 max-h-96 overflow-y-auto">
+              ${filteredExams.map(x=>`<button onclick="setPhase3Exam('${x.id}')" class="w-full text-left p-3 rounded-xl border ${x.id===exam?'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30':'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'}"><div class="flex items-center justify-between gap-2"><b class="text-xs">${esc3(x.name)}</b><span class="text-[9px] px-2 py-1 rounded-full bg-white/70 dark:bg-slate-900">${esc3(x.group)}</span></div><div class="text-[10px] text-slate-500 mt-1">${esc3(x.classes)} • ${esc3(x.organizer)}</div></button>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="academic-card">
+          <h3 class="font-bold">🔄 Cross-Board Curriculum Mapper</h3>
+          <p class="text-xs text-slate-500 mt-1">Map concepts by topic instead of assuming every board uses the same chapter names. This is intentionally a framework until an official board pack is verified.</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+            ${['Mathematics','Physics','Chemistry','Biology','English / Languages','Social Science','Computer Science / IT','General Aptitude'].map(x=>`<div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-xs font-semibold">${x}<div class="text-[9px] text-slate-400 mt-1">Concept map ready</div></div>`).join('')}
+          </div>
+        </div>
+
+        <div class="academic-card">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div><h3 class="font-bold">🔔 Curriculum Update Center</h3><p class="text-xs text-slate-500 mt-1">Versioned updates should be reviewed before they alter a student's tracked syllabus.</p></div>
+            <span class="px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">Review before apply</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-3"><b class="text-xs">1. Detect</b><p class="text-[10px] text-slate-500 mt-1">Monitor official board/exam notices and version identifiers.</p></div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-3"><b class="text-xs">2. Compare</b><p class="text-[10px] text-slate-500 mt-1">Show added, removed and changed topics before migration.</p></div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-3"><b class="text-xs">3. Apply</b><p class="text-[10px] text-slate-500 mt-1">Migrate only the selected curriculum while preserving completed work.</p></div>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-3">GitHub Pages cannot reliably scrape every official portal directly. The production update service should use a scheduled server/GitHub Action, create a versioned change set, and require review before applying it.</p>
+        </div>
+
+        <div class="academic-card">
+          <h3 class="font-bold">🌐 Official Source Registry</h3>
+          <p class="text-xs text-slate-500 mt-1">Use the source attached to the selected board or exam for the authoritative notice.</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a href="${esc3(b.url)}" target="_blank" rel="noopener" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">${esc3(b.source)} ↗</a>
+            ${exam!=='none'?'<a href="'+esc3(e.url)+'" target="_blank" rel="noopener" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold">'+esc3(e.organizer)+' / '+esc3(e.name)+' ↗</a>':''}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  window.setPhase3Board=function(id){const s=state();s.board=id;save(s);render();};
+  window.setPhase3Exam=function(id){const s=state();s.exam=id;save(s);render();};
+  window.phase3Search=function(q){const s=state();s.query=q;save(s);render();const i=document.getElementById('p3-search');if(i){i.focus();i.setSelectionRange(q.length,q.length);}};
+  window.savePhase3Profile=function(){const s=state();save(s);if(typeof showToast==='function')showToast('Boards & exams profile saved on this device');};
+  window.openPhase3Sources=function(){const s=state(),b=BOARDS.find(x=>x.id===(s.board||'cbse')),e=EXAMS.find(x=>x.id===(s.exam||'none'));window.open(b?.url||'https://cbseacademic.nic.in/','_blank','noopener');if(e&&e.url)window.open(e.url,'_blank','noopener');};
+  window.renderUniversal=render;
+
+  function install(){
+    const nav=document.querySelector('header > div:last-child');
+    if(nav&&!document.getElementById('tab-universal'))nav.insertAdjacentHTML('beforeend','<button onclick="switchTab(\'universal\')" id="tab-universal" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">🌐 Boards & Exams</button>');
+    const main=document.getElementById('main-content-pane');
+    if(main&&!document.getElementById('view-universal'))main.insertAdjacentHTML('beforeend','<section id="view-universal" class="hidden space-y-6"></section>');
+    const previousSwitch=window.switchTab;
+    window.switchTab=function(tab){
+      if(tab==='universal'){
+        appState.activeTab='universal';saveState();
+        document.querySelectorAll('[id^="view-"]').forEach(x=>x.classList.add('hidden'));
+        document.getElementById('view-universal')?.classList.remove('hidden');
+        render();
+        return;
+      }
+      previousSwitch(tab);
+    };
+    if(appState.activeTab==='universal'){document.getElementById('view-universal')?.classList.remove('hidden');render();}
+  }
+  window.addEventListener('load',install);
+})();
+</script>
+
 </body>
 </html>
