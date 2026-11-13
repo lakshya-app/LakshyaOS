@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LakshyaOS — Smart Syllabus Planner, NCERT Reader & Streak Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Custom scrollbar for clean academic feel */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.7); }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container (Replaces alert/confirm) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-500/20">
+          🎯
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg tracking-tight text-slate-900 dark:text-white leading-none">LakshyaOS</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">2026–27 Session</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">CBSE • JEE • NEET • CUET Adaptive Planner</p>
+        </div>
+      </div>
+
+      <!-- Global Class & Exam Mode Quick Selectors -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+        <!-- Class Switcher -->
+        <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+          <button onclick="setActiveClass('11')" id="btn-class-11" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition">Class 11</button>
+          <button onclick="setActiveClass('12')" id="btn-class-12" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition">Class 12</button>
+          <button onclick="setActiveClass('all')" id="btn-class-all" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition">11 + 12</button>
+        </div>
+
+        <!-- Exam Track Selector -->
+        <select id="exam-track-select" onchange="setExamTrack(this.value)" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="CBSE_JEE">CBSE + JEE Main/Adv</option>
+          <option value="CBSE_NEET">CBSE + NEET UG</option>
+          <option value="CBSE_CUET">CBSE + CUET UG</option>
+          <option value="CBSE_ONLY">CBSE Boards Only</option>
+        </select>
+
+        <!-- Split-Screen Reader Toggle -->
+        <button onclick="toggleSplitReader()" id="btn-split-reader" class="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition">
+          <i data-lucide="columns-2" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
+          <span class="hidden md:inline">Split PDF Reader</span>
+        </button>
+
+        <!-- Calendar Export Quick Button -->
+        <button onclick="openCalendarModal()" title="Export Schedule to Google Calendar (.ics)" class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold px-3 py-2 rounded-xl transition">
+          <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+          <span class="hidden lg:inline">Export .ics</span>
+        </button>
+
+        <!-- Custom Upload / Add Button -->
+        <button onclick="openUploadModal()" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-sm transition">
+          <span>+ Add Syllabus / Link</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" title="Toggle Dark/Light Mode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto border-t border-slate-100 dark:border-slate-800/80">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">📊 Dashboard & Countdowns</button>
+      <button onclick="switchTab('scheduler')" id="tab-scheduler" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">🗓️ Smart Time Scheduler</button>
+      <button onclick="switchTab('syllabus')" id="tab-syllabus" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">📚 Syllabus Tracker (8 Subjects)</button>
+      <button onclick="switchTab('ncert')" id="tab-ncert" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">📥 NCERT PDFs & CBSE Links</button>
+      <button onclick="switchTab('focus')" id="tab-focus" class="nav-tab px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap">⏱️ Focus Timer & Revision</button>
+    </div>
+  </header>
+
+  <!-- ==================== WORKSPACE WRAPPER (SUPPORTS SPLIT-SCREEN READER) ==================== -->
+  <div id="workspace-layout" class="flex-1 flex flex-col lg:flex-row max-w-[1600px] w-full mx-auto overflow-hidden">
+
+    <!-- LEFT / MAIN CONTENT CONTAINER -->
+    <main id="main-content-pane" class="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 overflow-y-auto">
+
+      <!-- ==================== TAB 1: DASHBOARD & COUNTDOWNS ==================== -->
+      <section id="view-dashboard" class="space-y-6">
+        <!-- Top Exam Countdowns Bar -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Syllabus Completed</span>
+            <span class="text-lg">📈</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-completion-pct" class="text-3xl font-extrabold text-slate-900 dark:text-white">0%</span>
+            <span id="stat-chapters-count" class="text-xs font-medium text-slate-500 dark:text-slate-400">0/0 chapters</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+            <div id="stat-completion-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rest to Cover</span>
+            <span class="text-lg">🎯</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-remaining-hours" class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">0h</span>
+            <span id="stat-remaining-chaps" class="text-xs font-medium text-slate-500 dark:text-slate-400">0 chapters left</span>
+          </div>
+          <p id="stat-high-yield-left" class="text-xs text-slate-500 dark:text-slate-400 mt-3">0 High-Yield chapters remaining</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Required Daily Pace</span>
+            <span class="text-lg">⚡</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-daily-pace" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0.0h</span>
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">/ day needed</span>
+          </div>
+          <p id="stat-pace-status" class="text-xs text-slate-500 dark:text-slate-400 mt-3">Based on your target exam date</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Exam Readiness</span>
+            <span class="text-lg">🏆</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-readiness-score" class="text-3xl font-extrabold text-violet-600 dark:text-violet-400">0</span>
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">/ 100 pts</span>
+          </div>
+          <p id="stat-revision-due" class="text-xs text-slate-500 dark:text-slate-400 mt-3">0 chapters due for revision</p>
+        </div>
+      </div>
+
+      <!-- Daily Study Streak & 16-Week Focus Activity Heatmap -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                🔥 Daily Study Streak & Consistency Heatmap
+              </h3>
+              <span id="streak-badge-current" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300 border border-orange-200 dark:border-orange-800">0 Day Streak</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">16-week self-study activity log. Auto-syncs with Pomodoro timer or log hours manually.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-4 text-xs bg-slate-50 dark:bg-slate-800/70 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div><span class="text-slate-400">Longest:</span> <strong id="streak-longest" class="text-slate-800 dark:text-white">0d</strong></div>
+              <div><span class="text-slate-400">16-Wk Total:</span> <strong id="streak-total-hrs" class="text-indigo-600 dark:text-indigo-400">0h</strong></div>
+            </div>
+            <button onclick="openLogStudyModal()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition">+ Log Study Session</button>
+          </div>
+        </div>
+
+        <!-- Heatmap Grid Wrapper -->
+        <div class="overflow-x-auto pb-2">
+          <div id="study-heatmap-grid" class="inline-grid grid-flow-col grid-rows-7 gap-1.5 min-w-max">
+            <!-- 112 days (16 weeks x 7 days) rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Heatmap Legend & Hover Readout -->
+        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+          <span id="heatmap-hover-info" class="font-medium text-slate-600 dark:text-slate-300">Hover any square to inspect daily hours & chapters covered.</span>
+          <div class="flex items-center gap-1.5">
+            <span>Less</span>
+            <span class="w-3 h-3 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" title="0 hrs"></span>
+            <span class="w-3 h-3 rounded-sm bg-emerald-200 dark:bg-emerald-900" title="< 2 hrs"></span>
+            <span class="w-3 h-3 rounded-sm bg-emerald-400 dark:bg-emerald-700" title="2 - 4 hrs"></span>
+            <span class="w-3 h-3 rounded-sm bg-emerald-500 dark:bg-emerald-500" title="4 - 6 hrs"></span>
+            <span class="w-3 h-3 rounded-sm bg-emerald-700 dark:bg-emerald-300" title="6+ hrs"></span>
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject-Wise Progress & Quick Actions -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Subject Progress Bars -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">Subject-Wise Syllabus Mastery</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Click any subject to jump to its chapters & NCERT PDFs</p>
+            </div>
+            <button onclick="switchTab('syllabus')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Manage All →</button>
+          </div>
+          <div id="dashboard-subject-bars" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Today's Recommended Study Queue & Data Tools -->
+        <div class="space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">📌 Up Next on Your Plan</h3>
+              <button onclick="switchTab('scheduler')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Full Schedule</button>
+            </div>
+            <div id="dashboard-up-next" class="space-y-2.5">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Backup & Utility Card -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">💾 Data & Quick Actions</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Your progress auto-saves locally. Export backups or reset anytime.</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="exportBackupJSON()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold transition">⬇️ Export JSON</button>
+              <label class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold transition text-center cursor-pointer">
+                ⬆️ Import JSON
+                <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+              </label>
+              <button onclick="exportScheduleCSV()" class="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-semibold transition">📊 Export CSV Plan</button>
+              <button onclick="confirmResetProgress()" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 text-xs font-semibold transition">🔄 Reset Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: SMART TIME SCHEDULER ==================== -->
+    <section id="view-scheduler" class="hidden space-y-6">
+      <!-- Scheduler Configuration Panel -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm no-print">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">🧠 Smart Time-Based Syllabus Scheduler</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Dynamically allocates your remaining days across uncompleted chapters based on exam weightage and daily study capacity.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openCalendarModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5">
+              <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i> Export to Calendar (.ics)
+            </button>
+            <button onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold transition">🖨️ Print Timetable</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Scope: Rest to Cover vs Whole Syllabus -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Syllabus Scope</label>
+            <div class="grid grid-cols-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+              <button onclick="setSchedulerScope('rest')" id="scope-rest" class="py-1.5 px-2 rounded-lg text-xs font-semibold transition">Rest to Cover</button>
+              <button onclick="setSchedulerScope('whole')" id="scope-whole" class="py-1.5 px-2 rounded-lg text-xs font-semibold transition">Whole Syllabus</button>
+            </div>
+          </div>
+
+          <!-- Target Exam Date -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Target Completion / Exam</label>
+            <input type="date" id="sched-target-date" onchange="generateSchedule()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          <!-- Daily Study Hours -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Daily Self-Study Hours</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="sched-daily-hours" min="1" max="16" step="0.5" value="6" onchange="generateSchedule()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span class="text-xs text-slate-400 font-medium">hrs/day</span>
+            </div>
+          </div>
+
+          <!-- Buffer % for Revision & Mock Tests -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Revision & Mock Buffer</label>
+            <select id="sched-buffer" onchange="generateSchedule()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="0.10">10% Buffer (Tight)</option>
+              <option value="0.15" selected>15% Buffer (Recommended)</option>
+              <option value="0.25">25% Buffer (Heavy Mock Prep)</option>
+              <option value="0">0% Buffer (Pure Coverage)</option>
+            </select>
+          </div>
+
+          <!-- Priority Strategy -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Ordering Strategy</label>
+            <select id="sched-strategy" onchange="generateSchedule()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="high_yield">🔥 High-Weightage First</option>
+              <option value="balanced" selected>⚖️ Balanced Subject Rotation</option>
+              <option value="quick_wins">⚡ Quick Wins (Shortest First)</option>
+              <option value="linear">📖 NCERT Sequential Order</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Subject Filter Pills for Scheduler -->
+        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Include Subjects:</span>
+          <div id="sched-subject-toggles" class="flex flex-wrap gap-1.5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Feasibility Banner -->
+      <div id="sched-feasibility-banner" class="rounded-2xl p-4 border flex flex-wrap items-center justify-between gap-4">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Generated Day-by-Day / Week-by-Week Timeline -->
+      <div class="space-y-4" id="sched-timeline-container">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: SYLLABUS TRACKER ==================== -->
+    <section id="view-syllabus" class="hidden space-y-5">
+      <!-- Filter & Search Toolbar -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[240px]">
+          <input type="text" id="syllabus-search" oninput="renderSyllabusList()" placeholder="Search chapters, units, or topics..." class="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <select id="syllabus-subject-filter" onchange="renderSyllabusList()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+            <option value="ALL">All Subjects</option>
+          </select>
+          <select id="syllabus-status-filter" onchange="renderSyllabusList()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+            <option value="ALL">All Statuses</option>
+            <option value="not_started">Not Started</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="revision">Needs Revision</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl">
+            <input type="checkbox" id="syllabus-high-yield-only" onchange="renderSyllabusList()" class="rounded text-indigo-600 focus:ring-indigo-500" />
+            <span>🔥 High-Yield Only</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Chapters Accordion / Cards List -->
+      <div id="syllabus-list-container" class="space-y-4">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: NCERT PDFs & CBSE LINKS HUB ==================== -->
+    <section id="view-ncert" class="hidden space-y-6">
+      <!-- Official Portals Banner -->
+      <div class="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-2xl p-6 text-white shadow-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold mb-2">Official Academic Repository</span>
+            <h2 class="text-xl font-bold">NCERT Textbooks & CBSE 2026–27 Curriculum Hub</h2>
+            <p class="text-xs sm:text-sm text-indigo-100 mt-1 max-w-2xl">Direct access to Class 11 & 12 NCERT textbooks for PCM, Biology, Informatics Practices, Physical Education, Painting, and English Core—plus your custom uploaded links.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <a href="https://ncert.nic.in/textbook.php" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-white text-indigo-700 font-bold text-xs shadow hover:bg-indigo-50 transition">🌐 NCERT Official Portal ↗</a>
+            <a href="https://cbseacademic.nic.in/curriculum_2027.html" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-indigo-900/50 border border-white/30 text-white font-bold text-xs hover:bg-indigo-900/70 transition">📑 CBSE Curriculum ↗</a>
+            <button onclick="openUploadModal()" class="px-4 py-2.5 rounded-xl bg-amber-400 text-slate-900 font-bold text-xs shadow hover:bg-amber-300 transition">+ Upload Custom Link</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Uploaded Links Section (if any) -->
+      <div id="custom-links-section" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">🔗 Your Uploaded Syllabus & NCERT Links</h3>
+          <button onclick="openUploadModal()" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">+ Add New Link</button>
+        </div>
+        <div id="custom-links-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Pre-Loaded Class 11 & 12 NCERT Books Directory -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">📚 Pre-Loaded Class 11 & 12 NCERT Books & Syllabus PDFs</h3>
+          <span class="text-xs text-slate-500 dark:text-slate-400">Filtered by active Class selector above</span>
+        </div>
+        <div id="ncert-books-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: FOCUS TIMER & SPACED REVISION ==================== -->
+    <section id="view-focus" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Pomodoro Focus Timer -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col items-center text-center">
+          <span class="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 text-xs font-bold mb-3">🎧 Deep Work Pomodoro Logger</span>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Chapter Focus Session</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Select a chapter below and log distraction-free study blocks.</p>
+
+          <!-- Chapter Selector -->
+          <select id="pomodoro-chapter-select" class="mt-4 w-full max-w-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold">
+            <!-- Populated dynamically -->
+          </select>
+
+          <!-- Preset Mode Buttons -->
+          <div class="flex items-center gap-2 mt-4">
+            <button onclick="setPomodoroDuration(25)" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-xs font-semibold">25m Focus</button>
+            <button onclick="setPomodoroDuration(50)" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-xs font-semibold">50m Deep Block</button>
+            <button onclick="setPomodoroDuration(10)" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-xs font-semibold">10m Break</button>
+          </div>
+
+          <!-- Timer Display -->
+          <div id="pomodoro-display" class="my-6 text-6xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400 tabular-nums">
+            25:00
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center gap-3">
+            <button onclick="togglePomodoro()" id="pomodoro-start-btn" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow transition">▶ Start Session</button>
+            <button onclick="resetPomodoro()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold transition">Reset</button>
+            <button onclick="completePomodoroSession()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">✓ Log & Complete</button>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 w-full flex justify-around text-xs">
+            <div>
+              <span class="text-slate-400 block">Sessions Logged</span>
+              <span id="pomo-total-sessions" class="font-bold text-base text-slate-800 dark:text-white">0</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Total Focus Time</span>
+              <span id="pomo-total-mins" class="font-bold text-base text-slate-800 dark:text-white">0 mins</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spaced Repetition Revision Queue -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">🔁 Spaced Repetition Revision Queue</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Chapters marked "Needs Revision" or completed 3+ days ago appear here for active recall.</p>
+            </div>
+          </div>
+          <div id="revision-queue-list" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </main>
+
+    <!-- ==================== RIGHT PANE: IN-APP SPLIT-SCREEN NCERT PDF & LINK VIEWER ==================== -->
+    <aside id="split-reader-pane" class="hidden w-full lg:w-[48%] xl:w-[50%] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-[85vh] lg:h-[calc(100vh-7.1rem)] lg:sticky lg:top-[7.1rem]">
+      <!-- Reader Top Control Bar -->
+      <div class="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/70 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-bold shrink-0">📖 Split Reader</span>
+            <h3 id="reader-current-title" class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">CBSE Class 12 Curriculum & NCERT Books</h3>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <a id="reader-external-link" href="https://ncert.nic.in/textbook.php" target="_blank" rel="noopener noreferrer" title="Open directly in new browser tab" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 transition">
+              New Tab ↗
+            </a>
+            <button onclick="toggleSplitReader(false)" title="Close Split Reader" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 text-xs font-bold">✕</button>
+          </div>
+        </div>
+
+        <!-- Quick Book / Syllabus Selector + Local PDF Upload -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="reader-quick-select" onchange="loadReaderFromPreset(this.value)" class="flex-1 min-w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold">
+            <option value="">📚 Quick-Load Class 11/12 NCERT or CBSE Link...</option>
+          </select>
+
+          <label class="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 text-xs font-semibold transition shrink-0" title="Open any downloaded NCERT PDF file directly with zero browser restrictions">
+            <span>📂 Load Local PDF</span>
+            <input type="file" accept=".pdf,application/pdf" onchange="handleLocalPdfUpload(event)" class="hidden" />
+          </label>
+        </div>
+
+        <!-- Custom URL Bar -->
+        <form onsubmit="handleReaderUrlSubmit(event)" class="flex items-center gap-1.5">
+          <input type="url" id="reader-url-input" placeholder="Paste any PDF URL, Google Drive preview link, or CBSE/NCERT link..." class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">Load</button>
+        </form>
+      </div>
+
+      <!-- Iframe Security Notice Banner (Helpful fallback for X-Frame-Options blocked govt sites) -->
+      <div id="reader-iframe-notice" class="px-3 py-2 bg-indigo-50/90 dark:bg-indigo-950/50 border-b border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between gap-2 text-[11px] text-indigo-800 dark:text-indigo-200">
+        <span>💡 <strong>Tip:</strong> If <code>ncert.nic.in</code> refuses embedded preview due to government security headers, click <strong>New Tab ↗</strong> or use <strong>📂 Load Local PDF</strong> to read offline PDFs right here!</span>
+        <button onclick="document.getElementById('reader-iframe-notice').classList.add('hidden')" class="text-indigo-500 hover:text-indigo-700 font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- Embedded PDF / Web Iframe Viewport -->
+      <div class="flex-1 relative bg-slate-100 dark:bg-slate-950 min-h-[260px]">
+        <iframe id="reader-iframe" src="about:blank" class="w-full h-full border-0" title="NCERT & Resource Split Viewer"></iframe>
+      </div>
+
+      <!-- Live Chapter Scratchpad (Auto-saves per selected chapter) -->
+      <div class="h-44 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 flex flex-col">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">📝 Quick Chapter Study Scratchpad</span>
+            <select id="scratchpad-chapter-select" onchange="loadChapterScratchpad(this.value)" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-[11px] font-semibold max-w-[200px]">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <span id="scratchpad-save-status" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Auto-saved ✓</span>
+        </div>
+        <textarea id="scratchpad-textarea" oninput="saveChapterScratchpad()" placeholder="Jot down key NCERT line numbers, formulas, exceptions, or PYQ traps while reading..." class="flex-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ==================== MODAL: UPLOAD SYLLABUS / NCERT LINK ==================== -->
+  <div id="upload-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">➕ Upload CBSE Syllabus / NCERT PDF Link or Custom Chapters</h3>
+        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+      </div>
+
+      <!-- Mode Switch -->
+      <div class="grid grid-cols-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <button onclick="switchUploadMode('link')" id="up-mode-link" class="py-1.5 rounded-lg text-xs font-semibold transition">🔗 Save PDF / Syllabus Link</button>
+        <button onclick="switchUploadMode('chapters')" id="up-mode-chapters" class="py-1.5 rounded-lg text-xs font-semibold transition">📝 Bulk Add Chapters</button>
+      </div>
+
+      <!-- Form A: Save Link -->
+      <form id="form-add-link" onsubmit="handleSaveCustomLink(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1">Resource Title *</label>
+          <input type="text" id="link-title" required placeholder="e.g., CBSE Class 12 Physics Rationalised Syllabus 2026-27" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1">Class / Target</label>
+            <select id="link-class" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+              <option value="Class 12">Class 12</option>
+              <option value="Class 11">Class 11</option>
+              <option value="Class 10">Class 10</option>
+              <option value="Class 9">Class 9</option>
+              <option value="Class 6-8">Class 6–8</option>
+              <option value="JEE / NEET">JEE / NEET</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Category</label>
+            <select id="link-category" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+              <option value="NCERT Book PDF">NCERT Book PDF</option>
+              <option value="CBSE Syllabus">CBSE Syllabus</option>
+              <option value="Sample Paper / PYQ">Sample Paper / PYQ</option>
+              <option value="Notes / Formula Sheet">Notes / Formula Sheet</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Direct URL (NCERT, CBSE, Google Drive, etc.) *</label>
+          <input type="url" id="link-url" required placeholder="https://ncert.nic.in/textbook.php?..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs" />
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeUploadModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">Save Resource Link</button>
+        </div>
+      </form>
+
+      <!-- Form B: Bulk Add Custom Subject/Chapters -->
+      <form id="form-add-chapters" onsubmit="handleAddCustomChapters(event)" class="hidden space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1">Class *</label>
+            <select id="cust-chap-class" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+              <option value="12">Class 12</option>
+              <option value="11">Class 11</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Subject Name *</label>
+            <input type="text" id="cust-chap-subject" required placeholder="e.g., Economics or Computer Science" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Optional NCERT / Syllabus PDF Link</label>
+          <input type="url" id="cust-chap-url" placeholder="https://ncert.nic.in/textbook.php" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Chapters List (One chapter per line) *</label>
+          <textarea id="cust-chap-lines" rows="5" required placeholder="Chapter 1: Introduction to Macroeconomics&#10;Chapter 2: National Income Accounting&#10;Chapter 3: Money and Banking" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs"></textarea>
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeUploadModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">Add to Syllabus & Scheduler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CUSTOMIZE EXAM DATES ==================== -->
+  <div id="exam-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">📅 Customize Upcoming Exam Dates</h3>
+        <button onclick="closeExamDateModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+      </div>
+      <div id="exam-dates-form-list" class="space-y-3">
+        <!-- Populated dynamically -->
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeExamDateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: GOOGLE CALENDAR (.ICS) EXPORT ==================== -->
+  <div id="calendar-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">📅 Export Study Schedule (.ics)</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Import directly into Google Calendar, Apple Calendar, Outlook, or Notion.</p>
+        </div>
+        <button onclick="closeCalendarModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+      </div>
+
+      <form onsubmit="handleExportICS(event)" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1">Daily Start Time</label>
+            <input type="time" id="ics-start-time" value="16:30" required class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Break Between Blocks</label>
+            <select id="ics-break-mins" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="0">No Break (0 mins)</option>
+              <option value="10">10 mins break</option>
+              <option value="15" selected>15 mins break</option>
+              <option value="30">30 mins break</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1">Export Horizon</label>
+            <select id="ics-scope" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="7">Next 7 Days</option>
+              <option value="30" selected>Next 30 Days</option>
+              <option value="all">Full Scheduled Plan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Calendar Reminder</label>
+            <select id="ics-alarm" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="15" selected>15 mins before</option>
+              <option value="30">30 mins before</option>
+              <option value="0">No Alert</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
+          <p class="font-bold text-slate-800 dark:text-white">How to import into Google Calendar:</p>
+          <p>1. Download the <code>LakshyaOS_Study_Schedule.ics</code> file below.</p>
+          <p>2. Open <strong>calendar.google.com</strong> → Settings (⚙️) → <strong>Import & Export</strong> → Select file.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeCalendarModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow">⬇️ Download .ics File</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: LOG STUDY SESSION FOR STREAK HEATMAP ==================== -->
+  <div id="log-study-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">🔥 Log Self-Study Session</h3>
+        <button onclick="closeLogStudyModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+      </div>
+      <form onsubmit="handleLogStudySession(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1">Date</label>
+          <input type="date" id="log-study-date" required class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Hours Studied (adds to existing day total)</label>
+          <input type="number" id="log-study-hours" min="0.5" max="16" step="0.5" value="2.0" required class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Optional Note / Chapter Covered</label>
+          <input type="text" id="log-study-note" placeholder="e.g., Solved 35 JEE PYQs on Electrostatics" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeLogStudyModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">Save to Streak</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. COMPREHENSIVE PRE-LOADED CBSE CLASS 11 & 12 SYLLABUS & NCERT BOOKS DB
+    // =========================================================================
+    const NCERT_BOOKS_CATALOG = [
+      // CLASS 12 BOOKS
+      { id: 'b12-phy1', classLevel: '12', subject: 'Physics', title: 'Physics Part I (Class XII)', code: 'leph1', url: 'https://ncert.nic.in/textbook.php?leph1=0-8', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Physics_SrSec_2026-27.pdf', color: 'blue' },
+      { id: 'b12-phy2', classLevel: '12', subject: 'Physics', title: 'Physics Part II (Class XII)', code: 'leph2', url: 'https://ncert.nic.in/textbook.php?leph2=0-6', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Physics_SrSec_2026-27.pdf', color: 'blue' },
+      { id: 'b12-chem1', classLevel: '12', subject: 'Chemistry', title: 'Chemistry Part I (Class XII)', code: 'lech1', url: 'https://ncert.nic.in/textbook.php?lech1=0-5', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Chemistry_SrSec_2026-27.pdf', color: 'emerald' },
+      { id: 'b12-chem2', classLevel: '12', subject: 'Chemistry', title: 'Chemistry Part II (Class XII)', code: 'lech2', url: 'https://ncert.nic.in/textbook.php?lech2=0-5', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Chemistry_SrSec_2026-27.pdf', color: 'emerald' },
+      { id: 'b12-math1', classLevel: '12', subject: 'Mathematics', title: 'Mathematics Part I (Class XII)', code: 'lemh1', url: 'https://ncert.nic.in/textbook.php?lemh1=0-6', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Maths_SrSec_2026-27.pdf', color: 'indigo' },
+      { id: 'b12-math2', classLevel: '12', subject: 'Mathematics', title: 'Mathematics Part II (Class XII)', code: 'lemh2', url: 'https://ncert.nic.in/textbook.php?lemh2=0-7', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Maths_SrSec_2026-27.pdf', color: 'indigo' },
+      { id: 'b12-bio', classLevel: '12', subject: 'Biology', title: 'Biology Textbook (Class XII)', code: 'lebo1', url: 'https://ncert.nic.in/textbook.php?lebo1=0-13', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Biology_SrSec_2026-27.pdf', color: 'teal' },
+      { id: 'b12-ip', classLevel: '12', subject: 'Informatics Practices', title: 'Informatics Practices (Class XII)', code: 'leip1', url: 'https://ncert.nic.in/textbook.php?leip1=0-7', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Informatics_Practices_SrSec_2026-27.pdf', color: 'violet' },
+      { id: 'b12-pe', classLevel: '12', subject: 'Physical Education', title: 'Health & Physical Education (Class XII)', code: 'lehp1', url: 'https://ncert.nic.in/textbook.php?lehp1=0-10', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/PhysicalEducation_SrSec_2026-27.pdf', color: 'amber' },
+      { id: 'b12-paint', classLevel: '12', subject: 'Painting', title: 'An Introduction to Indian Art Part-II', code: 'lefa1', url: 'https://ncert.nic.in/textbook.php?lefa1=0-8', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Painting_SrSec_2026-27.pdf', color: 'rose' },
+      { id: 'b12-eng1', classLevel: '12', subject: 'English Core', title: 'Flamingo & Vistas (Class XII)', code: 'lefl1 / levi1', url: 'https://ncert.nic.in/textbook.php?lefl1=0-14', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/EnglishCore_SrSec_2026-27.pdf', color: 'sky' },
+
+      // CLASS 11 BOOKS
+      { id: 'b11-phy1', classLevel: '11', subject: 'Physics', title: 'Physics Part I (Class XI)', code: 'keph1', url: 'https://ncert.nic.in/textbook.php?keph1=0-7', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Physics_SrSec_2026-27.pdf', color: 'blue' },
+      { id: 'b11-phy2', classLevel: '11', subject: 'Physics', title: 'Physics Part II (Class XI)', code: 'keph2', url: 'https://ncert.nic.in/textbook.php?keph2=0-7', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Physics_SrSec_2026-27.pdf', color: 'blue' },
+      { id: 'b11-chem1', classLevel: '11', subject: 'Chemistry', title: 'Chemistry Part I (Class XI)', code: 'kech1', url: 'https://ncert.nic.in/textbook.php?kech1=0-6', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Chemistry_SrSec_2026-27.pdf', color: 'emerald' },
+      { id: 'b11-chem2', classLevel: '11', subject: 'Chemistry', title: 'Chemistry Part II (Class XI)', code: 'kech2', url: 'https://ncert.nic.in/textbook.php?kech2=0-3', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Chemistry_SrSec_2026-27.pdf', color: 'emerald' },
+      { id: 'b11-math', classLevel: '11', subject: 'Mathematics', title: 'Mathematics Textbook (Class XI)', code: 'kemh1', url: 'https://ncert.nic.in/textbook.php?kemh1=0-14', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Maths_SrSec_2026-27.pdf', color: 'indigo' },
+      { id: 'b11-bio', classLevel: '11', subject: 'Biology', title: 'Biology Textbook (Class XI)', code: 'kebo1', url: 'https://ncert.nic.in/textbook.php?kebo1=0-19', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Biology_SrSec_2026-27.pdf', color: 'teal' },
+      { id: 'b11-ip', classLevel: '11', subject: 'Informatics Practices', title: 'Informatics Practices (Class XI)', code: 'keip1', url: 'https://ncert.nic.in/textbook.php?keip1=0-8', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Informatics_Practices_SrSec_2026-27.pdf', color: 'violet' },
+      { id: 'b11-pe', classLevel: '11', subject: 'Physical Education', title: 'Health & Physical Education (Class XI)', code: 'kehp1', url: 'https://ncert.nic.in/textbook.php?kehp1=0-11', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/PhysicalEducation_SrSec_2026-27.pdf', color: 'amber' },
+      { id: 'b11-paint', classLevel: '11', subject: 'Painting', title: 'An Introduction to Indian Art Part-I', code: 'kefa1', url: 'https://ncert.nic.in/textbook.php?kefa1=0-8', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/Painting_SrSec_2026-27.pdf', color: 'rose' },
+      { id: 'b11-eng', classLevel: '11', subject: 'English Core', title: 'Hornbill & Snapshots (Class XI)', code: 'kehb1 / kesp1', url: 'https://ncert.nic.in/textbook.php?kehb1=0-14', syllabusUrl: 'https://cbseacademic.nic.in/web_material/CurriculumMain27/SrSec/EnglishCore_SrSec_2026-27.pdf', color: 'sky' }
+    ];
+
+    // Helper to build chapter entries cleanly
+    function buildInitialSyllabus() {
+      const data = [];
+      const add = (cls, subj, book, unit, name, hrs, highYield, pdfUrl, defaultStatus = 'not_started') => {
+        data.push({
+          id: `${cls}-${subj.slice(0,3).toLowerCase()}-${data.length + 1}`,
+          classLevel: cls,
+          subject: subj,
+          book: book,
+          unit: unit,
+          name: name,
+          estHours: hrs,
+          highYield: highYield, // array of exams e.g. ['JEE', 'NEET', 'CBSE']
+          pdfUrl: pdfUrl,
+          status: defaultStatus,
+          completedDate: defaultStatus === 'completed' ? '2026-11-05' : null
+        });
+      };
+
+      // ==================== CLASS 12 SYLLABUS ====================
+      // 1. Class 12 Physics
+      add('12', 'Physics', 'Physics Part I', 'Unit I', 'Ch 1: Electric Charges and Fields', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph1=1-8', 'completed');
+      add('12', 'Physics', 'Physics Part I', 'Unit I', 'Ch 2: Electrostatic Potential and Capacitance', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph1=2-8', 'completed');
+      add('12', 'Physics', 'Physics Part I', 'Unit II', 'Ch 3: Current Electricity', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph1=3-8', 'completed');
+      add('12', 'Physics', 'Physics Part I', 'Unit III', 'Ch 4: Moving Charges and Magnetism', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph1=4-8', 'in_progress');
+      add('12', 'Physics', 'Physics Part I', 'Unit III', 'Ch 5: Magnetism and Matter', 4, ['CBSE'], 'https://ncert.nic.in/textbook.php?leph1=5-8', 'not_started');
+      add('12', 'Physics', 'Physics Part I', 'Unit IV', 'Ch 6: Electromagnetic Induction', 5, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?leph1=6-8', 'not_started');
+      add('12', 'Physics', 'Physics Part I', 'Unit IV', 'Ch 7: Alternating Current', 5, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph1=7-8', 'not_started');
+      add('12', 'Physics', 'Physics Part I', 'Unit V', 'Ch 8: Electromagnetic Waves', 3, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?leph1=8-8', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit VI', 'Ch 9: Ray Optics and Optical Instruments', 8, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph2=1-6', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit VI', 'Ch 10: Wave Optics', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph2=2-6', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit VII', 'Ch 11: Dual Nature of Radiation and Matter', 4, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph2=3-6', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit VIII', 'Ch 12: Atoms', 4, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?leph2=4-6', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit VIII', 'Ch 13: Nuclei', 4, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?leph2=5-6', 'not_started');
+      add('12', 'Physics', 'Physics Part II', 'Unit IX', 'Ch 14: Semiconductor Electronics', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?leph2=6-6', 'not_started');
+
+      // 2. Class 12 Chemistry
+      add('12', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 1: Solutions', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech1=1-5', 'completed');
+      add('12', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 2: Electrochemistry', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech1=2-5', 'completed');
+      add('12', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 3: Chemical Kinetics', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech1=3-5', 'in_progress');
+      add('12', 'Chemistry', 'Chemistry Part I', 'Inorganic', 'Ch 4: The d- and f-Block Elements', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech1=4-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part I', 'Inorganic', 'Ch 5: Coordination Compounds', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech1=5-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 6: Haloalkanes and Haloarenes', 6, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?lech2=1-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 7: Alcohols, Phenols and Ethers', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech2=2-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 8: Aldehydes, Ketones and Carboxylic Acids', 8, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech2=3-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 9: Amines', 5, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech2=4-5', 'not_started');
+      add('12', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 10: Biomolecules', 5, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lech2=5-5', 'not_started');
+
+      // 3. Class 12 Mathematics
+      add('12', 'Mathematics', 'Maths Part I', 'Unit I', 'Ch 1: Relations and Functions', 5, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh1=1-6', 'completed');
+      add('12', 'Mathematics', 'Maths Part I', 'Unit I', 'Ch 2: Inverse Trigonometric Functions', 4, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?lemh1=2-6', 'completed');
+      add('12', 'Mathematics', 'Maths Part I', 'Unit II', 'Ch 3: Matrices', 5, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh1=3-6', 'completed');
+      add('12', 'Mathematics', 'Maths Part I', 'Unit II', 'Ch 4: Determinants', 6, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh1=4-6', 'revision');
+      add('12', 'Mathematics', 'Maths Part I', 'Unit III', 'Ch 5: Continuity and Differentiability', 8, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh1=5-6', 'in_progress');
+      add('12', 'Mathematics', 'Maths Part I', 'Unit III', 'Ch 6: Application of Derivatives', 8, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?lemh1=6-6', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit III', 'Ch 7: Integrals', 10, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh2=1-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit III', 'Ch 8: Application of Integrals', 4, ['CBSE'], 'https://ncert.nic.in/textbook.php?lemh2=2-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit III', 'Ch 9: Differential Equations', 6, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?lemh2=3-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit IV', 'Ch 10: Vector Algebra', 5, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh2=4-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit IV', 'Ch 11: Three Dimensional Geometry', 7, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh2=5-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit V', 'Ch 12: Linear Programming', 3, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh2=6-7', 'not_started');
+      add('12', 'Mathematics', 'Maths Part II', 'Unit VI', 'Ch 13: Probability', 7, ['JEE', 'CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lemh2=7-7', 'not_started');
+
+      // 4. Class 12 Biology
+      add('12', 'Biology', 'Biology XII', 'Reproduction', 'Ch 1: Sexual Reproduction in Flowering Plants', 6, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=1-13', 'completed');
+      add('12', 'Biology', 'Biology XII', 'Reproduction', 'Ch 2: Human Reproduction', 6, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=2-13', 'completed');
+      add('12', 'Biology', 'Biology XII', 'Reproduction', 'Ch 3: Reproductive Health', 3, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=3-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Genetics', 'Ch 4: Principles of Inheritance and Variation', 8, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=4-13', 'in_progress');
+      add('12', 'Biology', 'Biology XII', 'Genetics', 'Ch 5: Molecular Basis of Inheritance', 8, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=5-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Genetics', 'Ch 6: Evolution', 5, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=6-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Biology & Welfare', 'Ch 7: Human Health and Disease', 6, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=7-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Biology & Welfare', 'Ch 8: Microbes in Human Welfare', 3, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=8-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Biotechnology', 'Ch 9: Biotechnology: Principles and Processes', 6, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=9-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Biotechnology', 'Ch 10: Biotechnology and its Applications', 5, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=10-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Ecology', 'Ch 11: Organisms and Populations', 4, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=11-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Ecology', 'Ch 12: Ecosystem', 4, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=12-13', 'not_started');
+      add('12', 'Biology', 'Biology XII', 'Ecology', 'Ch 13: Biodiversity and Conservation', 3, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?lebo1=13-13', 'not_started');
+
+      // 5. Class 12 Informatics Practices (IP)
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 1', 'Ch 1: Querying and SQL Functions', 6, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?leip1=1-7', 'completed');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 2', 'Ch 2: Data Handling using Pandas - I', 7, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?leip1=2-7', 'in_progress');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 2', 'Ch 3: Data Handling using Pandas - II', 5, ['CBSE'], 'https://ncert.nic.in/textbook.php?leip1=3-7', 'not_started');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 2', 'Ch 4: Plotting Data using Matplotlib', 4, ['CBSE'], 'https://ncert.nic.in/textbook.php?leip1=4-7', 'not_started');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 3', 'Ch 5: Internet and Web (Computer Networks)', 5, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?leip1=5-7', 'not_started');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Unit 4', 'Ch 6: Societal Impacts', 3, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?leip1=6-7', 'not_started');
+      add('12', 'Informatics Practices', 'IP Class XII', 'Practical', 'Ch 7: Project Based Learning & Practical File', 4, ['CBSE'], 'https://ncert.nic.in/textbook.php?leip1=7-7', 'not_started');
+
+      // 6. Class 12 Physical Education
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 1', 'Unit 1: Management of Sporting Events', 3, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'completed');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 2', 'Unit 2: Children & Women in Sports', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 3', 'Unit 3: Yoga as Preventive Measure for Lifestyle Disease', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 4', 'Unit 4: Physical Education & Sports for CWSN', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 5', 'Unit 5: Sports & Nutrition', 3, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 6', 'Unit 6: Test & Measurement in Sports', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 7', 'Unit 7: Physiology & Injuries in Sports', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 8', 'Unit 8: Biomechanics & Sports', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 9', 'Unit 9: Psychology & Sports', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+      add('12', 'Physical Education', 'PE Class XII', 'Unit 10', 'Unit 10: Training in Sports', 3, ['CBSE'], 'https://ncert.nic.in/textbook.php?lehp1=0-10', 'not_started');
+
+      // 7. Class 12 Painting (Fine Arts)
+      add('12', 'Painting', 'Indian Art Part-II', 'Unit 1', 'Ch 1-2: The Rajasthani & Pahari Schools of Miniature Painting', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefa1=1-8', 'completed');
+      add('12', 'Painting', 'Indian Art Part-II', 'Unit 2', 'Ch 3-4: The Mughal & Deccan Schools of Miniature Painting', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefa1=3-8', 'not_started');
+      add('12', 'Painting', 'Indian Art Part-II', 'Unit 3', 'Ch 5-6: The Bengal School & Indian National Flag Evolution', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefa1=5-8', 'not_started');
+      add('12', 'Painting', 'Indian Art Part-II', 'Unit 3', 'Ch 7-8: Modern Trends in Indian Art (Paintings, Graphics, Sculptures)', 4, ['CBSE'], 'https://ncert.nic.in/textbook.php?lefa1=7-8', 'not_started');
+
+      // 8. Class 12 English Core
+      add('12', 'English Core', 'Flamingo (Prose)', 'Literature', 'Flamingo Prose: The Last Lesson, Lost Spring, Deep Water, The Rattrap', 5, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefl1=1-14', 'completed');
+      add('12', 'English Core', 'Flamingo (Prose)', 'Literature', 'Flamingo Prose: Indigo, Poets and Pancakes, The Interview, Going Places', 5, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefl1=5-14', 'not_started');
+      add('12', 'English Core', 'Flamingo (Poetry)', 'Literature', 'Flamingo Poems: My Mother at Sixty-Six, Keeping Quiet, A Thing of Beauty, Roadside Stand, Aunt Jennifer', 4, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?lefl1=9-14', 'not_started');
+      add('12', 'English Core', 'Vistas', 'Literature', 'Vistas: The Third Level, The Tiger King, Journey to the End of Earth, The Enemy, On the Face of It, Memories of Childhood', 6, ['CBSE', 'CUET'], 'https://ncert.nic.in/textbook.php?levi1=1-6', 'not_started');
+      add('12', 'English Core', 'Skills', 'Reading & Writing', 'Unseen Passages, Notice, Invitation, Letter to Editor, Job Application, Article & Report Writing', 5, ['CBSE', 'CUET'], 'https://cbseacademic.nic.in/curriculum_2027.html', 'not_started');
+
+      // ==================== CLASS 11 SYLLABUS ====================
+      // 1. Class 11 Physics
+      add('11', 'Physics', 'Physics Part I', 'Unit I-II', 'Ch 1-2: Units & Measurements, Motion in a Straight Line', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph1=1-7', 'completed');
+      add('11', 'Physics', 'Physics Part I', 'Unit II', 'Ch 3: Motion in a Plane', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph1=3-7', 'completed');
+      add('11', 'Physics', 'Physics Part I', 'Unit III', 'Ch 4: Laws of Motion', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph1=4-7', 'in_progress');
+      add('11', 'Physics', 'Physics Part I', 'Unit IV', 'Ch 5: Work, Energy and Power', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph1=5-7', 'not_started');
+      add('11', 'Physics', 'Physics Part I', 'Unit V', 'Ch 6: System of Particles and Rotational Motion', 9, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph1=6-7', 'not_started');
+      add('11', 'Physics', 'Physics Part I', 'Unit VI', 'Ch 7: Gravitation', 5, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?keph1=7-7', 'not_started');
+      add('11', 'Physics', 'Physics Part II', 'Unit VII', 'Ch 8-9: Mechanical Properties of Solids & Fluids', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph2=1-7', 'not_started');
+      add('11', 'Physics', 'Physics Part II', 'Unit VII-IX', 'Ch 10-12: Thermal Properties, Thermodynamics & Kinetic Theory', 9, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph2=3-7', 'not_started');
+      add('11', 'Physics', 'Physics Part II', 'Unit X', 'Ch 13-14: Oscillations (SHM) & Waves', 8, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?keph2=6-7', 'not_started');
+
+      // 2. Class 11 Chemistry
+      add('11', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 1: Some Basic Concepts of Chemistry (Mole Concept)', 6, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech1=1-6', 'completed');
+      add('11', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 2: Structure of Atom', 7, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech1=2-6', 'completed');
+      add('11', 'Chemistry', 'Chemistry Part I', 'Inorganic', 'Ch 3: Classification of Elements & Periodicity', 5, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech1=3-6', 'not_started');
+      add('11', 'Chemistry', 'Chemistry Part I', 'Inorganic', 'Ch 4: Chemical Bonding and Molecular Structure', 8, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech1=4-6', 'not_started');
+      add('11', 'Chemistry', 'Chemistry Part I', 'Physical', 'Ch 5-6: Chemical Thermodynamics & Equilibrium', 11, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech1=5-6', 'not_started');
+      add('11', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 7: Redox Reactions', 4, ['JEE', 'NEET'], 'https://ncert.nic.in/textbook.php?kech2=1-3', 'not_started');
+      add('11', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 8: Organic Chemistry - Some Basic Principles (GOC)', 9, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech2=2-3', 'not_started');
+      add('11', 'Chemistry', 'Chemistry Part II', 'Organic', 'Ch 9: Hydrocarbons', 8, ['JEE', 'NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kech2=3-3', 'not_started');
+
+      // 3. Class 11 Mathematics
+      add('11', 'Mathematics', 'Maths XI', 'Unit I', 'Ch 1-2: Sets, Relations and Functions', 7, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=1-14', 'completed');
+      add('11', 'Mathematics', 'Maths XI', 'Unit I', 'Ch 3: Trigonometric Functions', 8, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=3-14', 'not_started');
+      add('11', 'Mathematics', 'Maths XI', 'Unit II', 'Ch 4-6: Complex Numbers, Linear Inequalities, Permutations & Combinations', 11, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=4-14', 'not_started');
+      add('11', 'Mathematics', 'Maths XI', 'Unit II', 'Ch 7-8: Binomial Theorem, Sequences and Series', 8, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=7-14', 'not_started');
+      add('11', 'Mathematics', 'Maths XI', 'Unit III', 'Ch 9-11: Straight Lines, Conic Sections & Intro to 3D Geometry', 11, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=9-14', 'not_started');
+      add('11', 'Mathematics', 'Maths XI', 'Unit IV-V', 'Ch 12-14: Limits and Derivatives, Statistics & Probability', 9, ['JEE', 'CBSE'], 'https://ncert.nic.in/textbook.php?kemh1=12-14', 'not_started');
+
+      // 4. Class 11 Biology
+      add('11', 'Biology', 'Biology XI', 'Diversity', 'Ch 1-4: The Living World, Biological Classification, Plant & Animal Kingdom', 11, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kebo1=1-19', 'completed');
+      add('11', 'Biology', 'Biology XI', 'Structural Org', 'Ch 5-7: Morphology, Anatomy of Flowering Plants & Structural Org in Animals', 8, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kebo1=5-19', 'not_started');
+      add('11', 'Biology', 'Biology XI', 'Cell Biology', 'Ch 8-10: Cell: Unit of Life, Biomolecules, Cell Cycle & Division', 9, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kebo1=8-19', 'not_started');
+      add('11', 'Biology', 'Biology XI', 'Plant Physio', 'Ch 11-13: Photosynthesis, Respiration in Plants, Plant Growth & Development', 9, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kebo1=11-19', 'not_started');
+      add('11', 'Biology', 'Biology XI', 'Human Physio', 'Ch 14-19: Breathing, Body Fluids, Excretion, Locomotion, Neural & Chemical Control', 14, ['NEET', 'CBSE'], 'https://ncert.nic.in/textbook.php?kebo1=14-19', 'not_started');
+
+      // 5. Class 11 Informatics Practices
+      add('11', 'Informatics Practices', 'IP Class XI', 'Unit 1-2', 'Ch 1-4: Computer System, Emerging Trends, Brief Overview of Python & Lists/Dictionaries', 12, ['CBSE'], 'https://ncert.nic.in/textbook.php?keip1=1-8', 'completed');
+      add('11', 'Informatics Practices', 'IP Class XI', 'Unit 3-4', 'Ch 5-8: Understanding Data, Introduction to NumPy, Database Concepts & SQL', 10, ['CBSE'], 'https://ncert.nic.in/textbook.php?keip1=5-8', 'not_started');
+
+      // 6. Class 11 Physical Education
+      add('11', 'Physical Education', 'PE Class XI', 'All Units', 'Units 1–10: Changing Trends, Olympism, Yoga, CWSN, Physical Fitness, Anatomy, Kinesiology & Doping', 12, ['CBSE'], 'https://ncert.nic.in/textbook.php?kehp1=0-11', 'not_started');
+
+      // 7. Class 11 Painting
+      add('11', 'Painting', 'Indian Art Part-I', 'All Units', 'Ch 1–8: Prehistoric Rock Paintings, Indus Valley, Buddhist/Jain Art, Temple Sculptures & Indo-Islamic Architecture', 10, ['CBSE'], 'https://ncert.nic.in/textbook.php?kefa1=1-8', 'not_started');
+
+      // 8. Class 11 English Core
+      add('11', 'English Core', 'Hornbill & Snapshots', 'Literature & Writing', 'Hornbill Prose & Poems, Snapshots Stories, Note Making, Summarizing & Grammar', 10, ['CBSE'], 'https://ncert.nic.in/textbook.php?kehb1=0-14', 'not_started');
+
+      return data;
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & LOCALSTORAGE PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEY = 'lakshya_os_state_v1';
+
+    const DEFAULT_EXAMS = [
+      { id: 'ex-preboard', name: 'CBSE Pre-Boards', date: '2026-12-15', tag: 'School Milestone', color: 'amber' },
+      { id: 'ex-jee1', name: 'JEE Main (Session 1)', date: '2027-01-24', tag: 'NTA Entrance', color: 'indigo' },
+      { id: 'ex-cbse', name: 'CBSE Board Exams', date: '2027-02-17', tag: 'Class 12 Boards', color: 'emerald' },
+      { id: 'ex-neet', name: 'NEET UG / JEE Sess 2', date: '2027-05-02', tag: 'National Medical/Engg', color: 'rose' }
+    ];
+
+    const DEFAULT_CUSTOM_LINKS = [
+      { id: 'cl-1', title: 'CBSE Senior Secondary Curriculum 2026-27 (All Subjects)', classLevel: 'Class 11 & 12', category: 'CBSE Syllabus', url: 'https://cbseacademic.nic.in/curriculum_2027.html' },
+      { id: 'cl-2', title: 'NCERT Official e-Textbooks Portal (Class I–XII PDF)', classLevel: 'Class 6-12', category: 'NCERT Book PDF', url: 'https://ncert.nic.in/textbook.php' },
+      { id: 'cl-3', title: 'CBSE Sample Question Papers & Marking Scheme', classLevel: 'Class 12', category: 'Sample Paper / PYQ', url: 'https://cbseacademic.nic.in/SQP_CLASSXII_2026-27.html' }
+    ];
+
+    // Pre-seed realistic 16-week study log so the streak heatmap is immediately informative
+    function generateInitialStudyLog() {
+      const log = {};
+      const today = new Date();
+      const pattern = [2.5, 4.0, 3.5, 0, 5.0, 6.5, 4.5, 3.0, 2.0, 5.5, 6.0, 4.0, 0, 3.5, 4.5, 5.0, 6.5, 4.0, 3.0, 5.5, 6.0];
+      for (let i = 111; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        // Keep recent 9 days active for an encouraging initial streak
+        if (i <= 8) {
+          log[key] = { hours: [4.5, 5.0, 3.5, 6.0, 4.0, 5.5, 3.0, 4.5, 2.5][i], note: 'Daily Target Study Block' };
+        } else {
+          const val = pattern[i % pattern.length];
+          if (val > 0) log[key] = { hours: val, note: 'NCERT + Practice Session' };
+        }
+      }
+      return log;
+    }
+
+    let appState = {
+      activeTab: 'dashboard',
+      activeClass: '12', // '11', '12', or 'all'
+      examTrack: 'CBSE_JEE',
+      theme: 'light',
+      splitReaderOpen: false,
+      readerUrl: 'https://cbseacademic.nic.in/curriculum_2027.html',
+      readerTitle: 'CBSE 2026-27 Senior Secondary Curriculum',
+      chapters: buildInitialSyllabus(),
+      exams: DEFAULT_EXAMS,
+      customLinks: DEFAULT_CUSTOM_LINKS,
+      studyLog: generateInitialStudyLog(),
+      chapterNotes: {},
+      scheduler: {
+        scope: 'rest', // 'rest' or 'whole'
+        targetDate: '2027-01-20',
+        dailyHours: 6,
+        buffer: 0.15,
+        strategy: 'balanced',
+        excludedSubjects: []
+      },
+      pomodoro: {
+        sessionsCompleted: 3,
+        totalMinutes: 75,
+        selectedChapterId: null
+      }
+    };
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          appState = { ...appState, ...parsed };
+          if (!appState.studyLog) appState.studyLog = generateInitialStudyLog();
+          if (!appState.chapterNotes) appState.chapterNotes = {};
+        }
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error('Failed to save state:', e);
+      }
+    }
+
+    // =========================================================================
+    // 3. UI HELPERS & TOAST NOTIFICATIONS
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-900 dark:bg-indigo-600 text-white'
+      };
+      toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center justify-between gap-3 pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()" class="opacity-75 hover:opacity-100">✕</button>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function toggleTheme() {
+      appState.theme = appState.theme === 'light' ? 'dark' : 'light';
+      applyTheme();
+      saveState();
+    }
+
+    function applyTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      if (appState.theme === 'dark') {
+        html.classList.add('dark');
+        icon.textContent = '☀️';
+      } else {
+        html.classList.remove('dark');
+        icon.textContent = '🌙';
+      }
+    }
+
+    function getSubjectBadgeColor(subject) {
+      const map = {
+        'Physics': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+        'Chemistry': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+        'Mathematics': 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
+        'Biology': 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800',
+        'Informatics Practices': 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800',
+        'Physical Education': 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+        'Painting': 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
+        'English Core': 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+      };
+      return map[subject] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+    }
+
+    function getFilteredChaptersByClass() {
+      if (appState.activeClass === 'all') return appState.chapters;
+      return appState.chapters.filter(c => c.classLevel === appState.activeClass);
+    }
+
+    function isHighYieldForCurrentTrack(chapter) {
+      if (!chapter.highYield || chapter.highYield.length === 0) return false;
+      if (appState.examTrack === 'CBSE_JEE') return chapter.highYield.includes('JEE');
+      if (appState.examTrack === 'CBSE_NEET') return chapter.highYield.includes('NEET');
+      if (appState.examTrack === 'CBSE_CUET') return chapter.highYield.includes('CUET');
+      return chapter.highYield.includes('CBSE');
+    }
+
+    // =========================================================================
+    // 4. NAVIGATION & GLOBAL CONTROLS
+    // =========================================================================
+    function switchTab(tabName) {
+      appState.activeTab = tabName;
+      saveState();
+
+      ['dashboard', 'scheduler', 'syllabus', 'ncert', 'focus'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tabName) {
+          view.classList.remove('hidden');
+          btn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
+          btn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+        } else {
+          view.classList.add('hidden');
+          btn.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
+          btn.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+        }
+      });
+
+      refreshCurrentView();
+    }
+
+    function setActiveClass(cls) {
+      appState.activeClass = cls;
+      saveState();
+      ['11', '12', 'all'].forEach(c => {
+        const btn = document.getElementById(`btn-class-${c}`);
+        if (c === cls) {
+          btn.classList.add('bg-white', 'dark:bg-slate-900', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+          btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        } else {
+          btn.classList.remove('bg-white', 'dark:bg-slate-900', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+          btn.classList.add('text-slate-600', 'dark:text-slate-400');
+        }
+      });
+      refreshCurrentView();
+    }
+
+    function setExamTrack(track) {
+      appState.examTrack = track;
+      saveState();
+      refreshCurrentView();
+      showToast(`Switched exam weightage mode to ${track.replace('_', ' + ')}`, 'info');
+    }
+
+    function refreshCurrentView() {
+      renderDashboard();
+      if (appState.activeTab === 'scheduler') renderSchedulerView();
+      if (appState.activeTab === 'syllabus') renderSyllabusView();
+      if (appState.activeTab === 'ncert') renderNcertHub();
+      if (appState.activeTab === 'focus') renderFocusView();
+    }
+
+    // =========================================================================
+    // 5. DASHBOARD RENDERING
+    // =========================================================================
+    function renderDashboard() {
+      const chapters = getFilteredChaptersByClass();
+      const total = chapters.length;
+      const completed = chapters.filter(c => c.status === 'completed');
+      const remaining = chapters.filter(c => c.status !== 'completed');
+      const revisionDue = chapters.filter(c => c.status === 'revision');
+
+      const pct = total ? Math.round((completed.length / total) * 100) : 0;
+      const remHours = remaining.reduce((sum, c) => sum + c.estHours, 0);
+      const highYieldLeft = remaining.filter(c => isHighYieldForCurrentTrack(c)).length;
+
+      // Calculate days left to target date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const targetDate = new Date(appState.scheduler.targetDate);
+      const daysLeft = Math.max(1, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+      const effectiveDays = Math.max(1, Math.round(daysLeft * (1 - appState.scheduler.buffer)));
+      const reqDailyPace = (remHours / effectiveDays).toFixed(1);
+
+      // Readiness Score calculation (weighted by completion + high yield + low revision backlog)
+      const highYieldCompleted = completed.filter(c => isHighYieldForCurrentTrack(c)).length;
+      const highYieldTotal = chapters.filter(c => isHighYieldForCurrentTrack(c)).length || 1;
+      const readiness = Math.min(100, Math.round((pct * 0.65) + ((highYieldCompleted / highYieldTotal) * 35)));
+
+      document.getElementById('stat-completion-pct').textContent = `${pct}%`;
+      document.getElementById('stat-chapters-count').textContent = `${completed.length}/${total} chapters`;
+      document.getElementById('stat-completion-bar').style.width = `${pct}%`;
+
+      document.getElementById('stat-remaining-hours').textContent = `${remHours}h`;
+      document.getElementById('stat-remaining-chaps').textContent = `${remaining.length} chapters left`;
+      document.getElementById('stat-high-yield-left').textContent = `🔥 ${highYieldLeft} High-Yield chapters remaining`;
+
+      document.getElementById('stat-daily-pace').textContent = `${reqDailyPace}h`;
+      document.getElementById('stat-pace-status').textContent = `${daysLeft} days to ${appState.scheduler.targetDate} (${Math.round(appState.scheduler.buffer * 100)}% buffer)`;
+
+      document.getElementById('stat-readiness-score').textContent = readiness;
+      document.getElementById('stat-revision-due').textContent = `${revisionDue.length} chapters flagged for revision`;
+
+      // Render Exam Countdowns
+      const countdownGrid = document.getElementById('exam-countdown-grid');
+      countdownGrid.innerHTML = appState.exams.map(ex => {
+        const d = new Date(ex.date);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        const badge = diff > 0 ? `${diff} days left` : (diff === 0 ? 'Today!' : 'Completed');
+        return `
+          <div onclick="syncTargetDateWithExam('${ex.date}', '${ex.name}')" title="Click to set as Scheduler Target Date" class="cursor-pointer group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:border-indigo-400 p-3.5 transition">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300">${ex.tag}</span>
+              <span class="text-xs font-extrabold ${diff <= 30 && diff >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-200'}">${badge}</span>
+            </div>
+            <h4 class="font-bold text-sm text-slate-900 dark:text-white mt-2 group-hover:text-indigo-600 transition">${ex.name}</h4>
+            <div class="flex items-center justify-between mt-1">
+              <span class="text-xs text-slate-500 dark:text-slate-400">${ex.date}</span>
+              <span class="text-[11px] text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition font-semibold">Sync Plan →</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Subject-Wise Progress Bars
+      const subjects = [...new Set(chapters.map(c => c.subject))];
+      const subjectBarsContainer = document.getElementById('dashboard-subject-bars');
+      subjectBarsContainer.innerHTML = subjects.map(subj => {
+        const subChaps = chapters.filter(c => c.subject === subj);
+        const subDone = subChaps.filter(c => c.status === 'completed').length;
+        const subPct = Math.round((subDone / subChaps.length) * 100);
+        const subRemHrs = subChaps.filter(c => c.status !== 'completed').reduce((s, c) => s + c.estHours, 0);
+        return `
+          <div onclick="jumpToSubject('${subj}')" class="cursor-pointer p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-slate-50/50 dark:bg-slate-800/40 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md border ${getSubjectBadgeColor(subj)}">${subj}</span>
+              <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200">${subPct}%</span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden my-2">
+              <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: ${subPct}%"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+              <span>${subDone}/${subChaps.length} chapters</span>
+              <span>${subRemHrs}h left</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render "Up Next" Queue (Top 4 priority remaining chapters)
+      const upNext = getOrderedChaptersForSchedule().slice(0, 4);
+      const upNextContainer = document.getElementById('dashboard-up-next');
+      if (upNext.length === 0) {
+        upNextContainer.innerHTML = `<p class="text-xs text-emerald-600 font-semibold py-4 text-center">🎉 All chapters in this view are completed! Switch to Revision or Mock Tests.</p>`;
+      } else {
+        upNextContainer.innerHTML = upNext.map(ch => `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${getSubjectBadgeColor(ch.subject)}">${ch.subject}</span>
+                ${isHighYieldForCurrentTrack(ch) ? '<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400">🔥 High Yield</span>' : ''}
+              </div>
+              <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate mt-1">${ch.name}</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openInSplitReader('${ch.pdfUrl}', '${ch.name.replace(/'/g, "\\'")}', '${ch.id}')" title="Open NCERT PDF in Split Reader" class="px-2 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 text-[11px] font-bold transition">
+                📖 Read
+              </button>
+              <button onclick="cycleChapterStatus('${ch.id}')" title="Mark Completed" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-emerald-50 hover:text-emerald-700 text-[11px] font-bold transition">
+                ✓ Done
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      renderStudyHeatmap();
+      if (window.lucide) lucide.createIcons();
+    }
+    }
+
+    function syncTargetDateWithExam(dateStr, examName) {
+      appState.scheduler.targetDate = dateStr;
+      saveState();
+      renderDashboard();
+      showToast(`Target completion synced to ${examName} (${dateStr})`, 'success');
+    }
+
+    function jumpToSubject(subject) {
+      switchTab('syllabus');
+      const filterEl = document.getElementById('syllabus-subject-filter');
+      if (filterEl) {
+        filterEl.value = subject;
+        renderSyllabusList();
+      }
+    }
+
+    // =========================================================================
+    // 6. SMART TIME-BASED SYLLABUS SCHEDULER ENGINE
+    // =========================================================================
+    function setSchedulerScope(scope) {
+      appState.scheduler.scope = scope;
+      saveState();
+      generateSchedule();
+    }
+
+    function toggleSchedulerSubject(subject) {
+      const idx = appState.scheduler.excludedSubjects.indexOf(subject);
+      if (idx > -1) {
+        appState.scheduler.excludedSubjects.splice(idx, 1);
+      } else {
+        appState.scheduler.excludedSubjects.push(subject);
+      }
+      saveState();
+      generateSchedule();
+    }
+
+    function getOrderedChaptersForSchedule() {
+      let pool = getFilteredChaptersByClass().filter(c => !appState.scheduler.excludedSubjects.includes(c.subject));
+      if (appState.scheduler.scope === 'rest') {
+        pool = pool.filter(c => c.status !== 'completed');
+      }
+
+      const strat = appState.scheduler.strategy;
+      if (strat === 'high_yield') {
+        return [...pool].sort((a, b) => {
+          const aHY = isHighYieldForCurrentTrack(a) ? 1 : 0;
+          const bHY = isHighYieldForCurrentTrack(b) ? 1 : 0;
+          return bHY - aHY;
+        });
+      }
+      if (strat === 'quick_wins') {
+        return [...pool].sort((a, b) => a.estHours - b.estHours);
+      }
+      if (strat === 'balanced') {
+        // Round-robin interleave across subjects so student studies multiple subjects smoothly
+        const bySubj = {};
+        pool.forEach(c => {
+          if (!bySubj[c.subject]) bySubj[c.subject] = [];
+          bySubj[c.subject].push(c);
+        });
+        const subjKeys = Object.keys(bySubj);
+        const interleaved = [];
+        let added = true;
+        while (added) {
+          added = false;
+          for (const k of subjKeys) {
+            if (bySubj[k].length > 0) {
+              interleaved.push(bySubj[k].shift());
+              added = true;
+            }
+          }
+        }
+        return interleaved;
+      }
+      return pool; // 'linear'
+    }
+
+    function renderSchedulerView() {
+      // Sync inputs with state
+      document.getElementById('sched-target-date').value = appState.scheduler.targetDate;
+      document.getElementById('sched-daily-hours').value = appState.scheduler.dailyHours;
+      document.getElementById('sched-buffer').value = appState.scheduler.buffer.toString();
+      document.getElementById('sched-strategy').value = appState.scheduler.strategy;
+
+      // Scope buttons styling
+      const restBtn = document.getElementById('scope-rest');
+      const wholeBtn = document.getElementById('scope-whole');
+      if (appState.scheduler.scope === 'rest') {
+        restBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm';
+        wholeBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-500';
+      } else {
+        wholeBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm';
+        restBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-500';
+      }
+
+      // Render subject toggle pills
+      const allSubjects = [...new Set(getFilteredChaptersByClass().map(c => c.subject))];
+      const pillsContainer = document.getElementById('sched-subject-toggles');
+      pillsContainer.innerHTML = allSubjects.map(subj => {
+        const active = !appState.scheduler.excludedSubjects.includes(subj);
+        return `
+          <button onclick="toggleSchedulerSubject('${subj}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${active ? getSubjectBadgeColor(subj) : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 line-through'}">
+            ${active ? '✓' : '+'} ${subj}
+          </button>
+        `;
+      }).join('');
+
+      generateSchedule();
+    }
+
+    function generateSchedule() {
+      // Read latest values from DOM
+      appState.scheduler.targetDate = document.getElementById('sched-target-date').value || '2027-01-20';
+      appState.scheduler.dailyHours = Math.max(1, parseFloat(document.getElementById('sched-daily-hours').value) || 6);
+      appState.scheduler.buffer = parseFloat(document.getElementById('sched-buffer').value) || 0;
+      appState.scheduler.strategy = document.getElementById('sched-strategy').value;
+      saveState();
+
+      // Update scope button visuals
+      const restBtn = document.getElementById('scope-rest');
+      const wholeBtn = document.getElementById('scope-whole');
+      if (appState.scheduler.scope === 'rest') {
+        restBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm';
+        wholeBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-500';
+      } else {
+        wholeBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm';
+        restBtn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-500';
+      }
+
+      const chaptersToSchedule = getOrderedChaptersForSchedule();
+      const totalHoursNeeded = chaptersToSchedule.reduce((s, c) => s + c.estHours, 0);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(appState.scheduler.targetDate);
+      const totalDaysAvailable = Math.max(1, Math.ceil((target - today) / (1000 * 60 * 60 * 24)));
+      const bufferDays = Math.floor(totalDaysAvailable * appState.scheduler.buffer);
+      const studyDaysAvailable = Math.max(1, totalDaysAvailable - bufferDays);
+      const totalCapacityHours = studyDaysAvailable * appState.scheduler.dailyHours;
+
+      // Feasibility Banner
+      const banner = document.getElementById('sched-feasibility-banner');
+      const isFeasible = totalCapacityHours >= totalHoursNeeded;
+      const reqHoursPerDay = (totalHoursNeeded / studyDaysAvailable).toFixed(1);
+
+      if (isFeasible) {
+        banner.className = 'rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/30 flex flex-wrap items-center justify-between gap-4';
+        banner.innerHTML = `
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">✅ Realistic & Achievable Plan</span>
+            <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 mt-0.5">
+              You need <strong>${totalHoursNeeded} hrs</strong> across <strong>${chaptersToSchedule.length} chapters</strong>. At <strong>${appState.scheduler.dailyHours} hrs/day</strong>, you will finish in <strong>${Math.ceil(totalHoursNeeded / appState.scheduler.dailyHours)} study days</strong> with <strong>${bufferDays} buffer days</strong> reserved for mock tests & revision!
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-500 dark:text-slate-400 block">Required Pace</span>
+            <span class="text-lg font-extrabold text-emerald-700 dark:text-emerald-400">${reqHoursPerDay} hrs/day</span>
+          </div>
+        `;
+      } else {
+        banner.className = 'rounded-2xl p-4 border border-amber-300 dark:border-amber-800/70 bg-amber-50/80 dark:bg-amber-950/30 flex flex-wrap items-center justify-between gap-4';
+        banner.innerHTML = `
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400">⚠️ High Intensity Alert — Increase Daily Hours or Filter High-Yield</span>
+            <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 mt-0.5">
+              <strong>${totalHoursNeeded} hrs</strong> required in <strong>${studyDaysAvailable} active study days</strong> (${bufferDays} buffer days). Increase daily study to <strong>${reqHoursPerDay} hrs/day</strong> or prioritize High-Yield chapters first.
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-500 dark:text-slate-400 block">Needed Pace</span>
+            <span class="text-lg font-extrabold text-amber-700 dark:text-amber-400">${reqHoursPerDay} hrs/day</span>
+          </div>
+        `;
+      }
+
+      // Build Day-by-Day Allocation grouped by Week
+      const container = document.getElementById('sched-timeline-container');
+      if (chaptersToSchedule.length === 0) {
+        container.innerHTML = `<div class="bg-white dark:bg-slate-900 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-800"><p class="text-sm font-bold">No chapters to schedule!</p><p class="text-xs text-slate-500 mt-1">Toggle "Whole Syllabus" or enable more subjects above.</p></div>`;
+        return;
+      }
+
+      // Pack chapters into days
+      const days = [];
+      let currentDayIndex = 0;
+      let hoursUsedToday = 0;
+      let currentDayTasks = [];
+
+      const dailyCap = appState.scheduler.dailyHours;
+
+      chaptersToSchedule.forEach(ch => {
+        let hrsLeftForChap = ch.estHours;
+        while (hrsLeftForChap > 0) {
+          const spaceToday = dailyCap - hoursUsedToday;
+          if (spaceToday <= 0.01) {
+            days.push({ dayNum: currentDayIndex + 1, tasks: currentDayTasks, totalHrs: hoursUsedToday });
+            currentDayIndex++;
+            hoursUsedToday = 0;
+            currentDayTasks = [];
+            continue;
+          }
+          const alloc = Math.min(hrsLeftForChap, spaceToday);
+          currentDayTasks.push({
+            chapter: ch,
+            hours: Number(alloc.toFixed(1)),
+            isPart: alloc < ch.estHours
+          });
+          hoursUsedToday += alloc;
+          hrsLeftForChap -= alloc;
+        }
+      });
+
+      if (currentDayTasks.length > 0) {
+        days.push({ dayNum: currentDayIndex + 1, tasks: currentDayTasks, totalHrs: Number(hoursUsedToday.toFixed(1)) });
+      }
+
+      // Group days into Weeks (7 days per week)
+      const weeks = [];
+      for (let i = 0; i < days.length; i += 7) {
+        weeks.push(days.slice(i, i + 7));
+      }
+
+      container.innerHTML = weeks.map((weekDays, wIdx) => {
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() + (wIdx * 7));
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + weekDays.length - 1);
+
+        const fmt = d => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+        return `
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div class="bg-slate-50 dark:bg-slate-800/80 px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white text-xs font-bold">Week ${wIdx + 1}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">${fmt(startDate)} – ${fmt(endDate)}</span>
+              </div>
+              <span class="text-xs text-slate-500 dark:text-slate-400">${weekDays.length} study days</span>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              ${weekDays.map(d => {
+                const dateObj = new Date(today);
+                dateObj.setDate(today.getDate() + d.dayNum - 1);
+                const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                return `
+                  <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition">
+                    <div class="sm:w-36 shrink-0">
+                      <span class="text-xs font-extrabold text-slate-900 dark:text-white block">Day ${d.dayNum} • ${dateLabel}</span>
+                      <span class="text-[11px] text-slate-400">${d.totalHrs} hrs planned</span>
+                    </div>
+                    <div class="flex-1 flex flex-wrap gap-2">
+                      ${d.tasks.map(t => `
+                        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs">
+                          <span class="font-bold px-1.5 py-0.5 rounded text-[10px] border ${getSubjectBadgeColor(t.chapter.subject)}">${t.chapter.subject}</span>
+                          <span class="font-medium text-slate-800 dark:text-slate-200">${t.chapter.name}</span>
+                          <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">(${t.hours}h${t.isPart ? ' part' : ''})</span>
+                          <button onclick="openInSplitReader('${t.chapter.pdfUrl}', '${t.chapter.name.replace(/'/g, "\\'")}', '${t.chapter.id}')" title="Open in Split Reader" class="text-indigo-500 hover:text-indigo-700 font-bold">📖</button>
+                          <a href="${buildGoogleCalendarQuickUrl(t.chapter, dateObj, t.hours)}" target="_blank" rel="noopener noreferrer" title="Add this session to Google Calendar" class="text-emerald-600 hover:text-emerald-700 font-bold">📅</a>
+                          ${t.chapter.status !== 'completed' ? `<button onclick="cycleChapterStatus('${t.chapter.id}')" title="Mark Complete" class="ml-0.5 text-slate-400 hover:text-emerald-600 font-bold">✓</button>` : '<span class="text-emerald-500 font-bold">✓</span>'}
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 7. SYLLABUS TRACKER VIEW
+    // =========================================================================
+    function renderSyllabusView() {
+      const chapters = getFilteredChaptersByClass();
+      const subjects = [...new Set(chapters.map(c => c.subject))];
+      const select = document.getElementById('syllabus-subject-filter');
+      const currentVal = select.value;
+      select.innerHTML = `<option value="ALL">All Subjects (${subjects.length})</option>` +
+        subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (subjects.includes(currentVal)) select.value = currentVal;
+
+      renderSyllabusList();
+    }
+
+    function renderSyllabusList() {
+      const query = document.getElementById('syllabus-search').value.toLowerCase().trim();
+      const subjFilter = document.getElementById('syllabus-subject-filter').value;
+      const statusFilter = document.getElementById('syllabus-status-filter').value;
+      const highYieldOnly = document.getElementById('syllabus-high-yield-only').checked;
+
+      let list = getFilteredChaptersByClass();
+      if (subjFilter !== 'ALL') list = list.filter(c => c.subject === subjFilter);
+      if (statusFilter !== 'ALL') list = list.filter(c => c.status === statusFilter);
+      if (highYieldOnly) list = list.filter(c => isHighYieldForCurrentTrack(c));
+      if (query) {
+        list = list.filter(c =>
+          c.name.toLowerCase().includes(query) ||
+          c.subject.toLowerCase().includes(query) ||
+          c.unit.toLowerCase().includes(query)
+        );
+      }
+
+      const container = document.getElementById('syllabus-list-container');
+      if (list.length === 0) {
+        container.innerHTML = `<div class="bg-white dark:bg-slate-900 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-800 text-xs text-slate-500">No chapters match your current filters.</div>`;
+        return;
+      }
+
+      // Group by Subject
+      const grouped = {};
+      list.forEach(ch => {
+        const key = `Class ${ch.classLevel} — ${ch.subject}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(ch);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([groupTitle, chaps]) => {
+        const subjName = chaps[0].subject;
+        const doneCount = chaps.filter(c => c.status === 'completed').length;
+        return `
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${getSubjectBadgeColor(subjName)}">${groupTitle}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">${doneCount}/${chaps.length} completed</span>
+              </div>
+              <a href="${chaps[0].pdfUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">📖 Open NCERT Book PDF ↗</a>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              ${chaps.map(ch => `
+                <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-[11px] font-semibold text-slate-400">${ch.book} • ${ch.unit}</span>
+                      ${isHighYieldForCurrentTrack(ch) ? `<span class="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[10px] font-bold">🔥 High Yield (${appState.examTrack.replace('CBSE_', '')})</span>` : ''}
+                    </div>
+                    <h4 class="text-sm font-semibold ${ch.status === 'completed' ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'}">${ch.name}</h4>
+                  </div>
+
+                  <div class="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">⏱ ${ch.estHours}h</span>
+                    <button onclick="openInSplitReader('${ch.pdfUrl}', '${ch.name.replace(/'/g, "\\'")}', '${ch.id}')" title="Open in Split-Screen Reader & Notes" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-semibold transition">📖 Split Read</button>
+                    <a href="${ch.pdfUrl}" target="_blank" rel="noopener noreferrer" title="Open Chapter NCERT PDF in New Tab" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-xs">↗</a>
+                    <select onchange="updateChapterStatus('${ch.id}', this.value)" class="text-xs font-bold rounded-xl px-3 py-1.5 border focus:outline-none cursor-pointer ${getStatusSelectStyle(ch.status)}">
+                      <option value="not_started" ${ch.status === 'not_started' ? 'selected' : ''}>Not Started</option>
+                      <option value="in_progress" ${ch.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                      <option value="completed" ${ch.status === 'completed' ? 'selected' : ''}>✓ Completed</option>
+                      <option value="revision" ${ch.status === 'revision' ? 'selected' : ''}>🔁 Needs Revision</option>
+                    </select>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getStatusSelectStyle(status) {
+      if (status === 'completed') return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
+      if (status === 'in_progress') return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800';
+      if (status === 'revision') return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
+      return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+    }
+
+    function updateChapterStatus(id, newStatus) {
+      const ch = appState.chapters.find(c => c.id === id);
+      if (!ch) return;
+      ch.status = newStatus;
+      ch.completedDate = newStatus === 'completed' ? new Date().toISOString().split('T')[0] : null;
+      saveState();
+      refreshCurrentView();
+      showToast(`Updated "${ch.name}" → ${newStatus.replace('_', ' ')}`, 'success');
+    }
+
+    function cycleChapterStatus(id) {
+      const ch = appState.chapters.find(c => c.id === id);
+      if (!ch) return;
+      updateChapterStatus(id, ch.status === 'completed' ? 'not_started' : 'completed');
+    }
+
+    // =========================================================================
+    // 8. NCERT PDFS & CBSE LINKS HUB + CUSTOM UPLOADER
+    // =========================================================================
+    function renderNcertHub() {
+      // Custom links
+      const customGrid = document.getElementById('custom-links-grid');
+      customGrid.innerHTML = appState.customLinks.map(link => `
+        <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col justify-between gap-3">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">${link.classLevel} • ${link.category}</span>
+              <button onclick="deleteCustomLink('${link.id}')" title="Remove link" class="text-xs text-slate-400 hover:text-rose-500">✕</button>
+            </div>
+            <h4 class="text-xs font-bold text-slate-900 dark:text-white mt-2">${link.title}</h4>
+          </div>
+          <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 text-xs font-semibold text-indigo-600 dark:text-indigo-400 transition">
+            Open Link / PDF ↗
+          </a>
+        </div>
+      `).join('');
+
+      // Pre-loaded NCERT Books filtered by Class
+      const books = appState.activeClass === 'all'
+        ? NCERT_BOOKS_CATALOG
+        : NCERT_BOOKS_CATALOG.filter(b => b.classLevel === appState.activeClass);
+
+      const booksGrid = document.getElementById('ncert-books-grid');
+      booksGrid.innerHTML = books.map(b => `
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm flex flex-col justify-between gap-4 hover:border-indigo-400 transition">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-lg border ${getSubjectBadgeColor(b.subject)}">Class ${b.classLevel} • ${b.subject}</span>
+              <span class="text-[11px] font-mono text-slate-400">${b.code}</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white mt-3">${b.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Official NCERT Rationalised Textbook & CBSE 2026–27 Syllabus</p>
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="openInSplitReader('${b.url}', '${b.title.replace(/'/g, "\\'")}')" class="py-2 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold text-center transition">📖 Split View</button>
+            <a href="${b.url}" target="_blank" rel="noopener noreferrer" class="py-2 px-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-center transition">📥 NCERT ↗</a>
+            <a href="${b.syllabusUrl}" target="_blank" rel="noopener noreferrer" class="py-2 px-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-center transition">📑 CBSE ↗</a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openUploadModal() {
+      document.getElementById('upload-modal').classList.remove('hidden');
+      switchUploadMode('link');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('upload-modal').classList.add('hidden');
+    }
+
+    function switchUploadMode(mode) {
+      const formLink = document.getElementById('form-add-link');
+      const formChap = document.getElementById('form-add-chapters');
+      const btnLink = document.getElementById('up-mode-link');
+      const btnChap = document.getElementById('up-mode-chapters');
+
+      if (mode === 'link') {
+        formLink.classList.remove('hidden');
+        formChap.classList.add('hidden');
+        btnLink.className = 'py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 shadow-sm';
+        btnChap.className = 'py-1.5 rounded-lg text-xs font-semibold text-slate-500';
+      } else {
+        formChap.classList.remove('hidden');
+        formLink.classList.add('hidden');
+        btnChap.className = 'py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-indigo-600 shadow-sm';
+        btnLink.className = 'py-1.5 rounded-lg text-xs font-semibold text-slate-500';
+      }
+    }
+
+    function handleSaveCustomLink(e) {
+      e.preventDefault();
+      const title = document.getElementById('link-title').value.trim();
+      const classLevel = document.getElementById('link-class').value;
+      const category = document.getElementById('link-category').value;
+      const url = document.getElementById('link-url').value.trim();
+
+      appState.customLinks.unshift({
+        id: 'cl-' + Date.now(),
+        title,
+        classLevel,
+        category,
+        url
+      });
+      saveState();
+      e.target.reset();
+      closeUploadModal();
+      switchTab('ncert');
+      showToast('Added custom syllabus/NCERT link!', 'success');
+    }
+
+    function deleteCustomLink(id) {
+      appState.customLinks = appState.customLinks.filter(l => l.id !== id);
+      saveState();
+      renderNcertHub();
+      showToast('Removed resource link.', 'info');
+    }
+
+    function handleAddCustomChapters(e) {
+      e.preventDefault();
+      const cls = document.getElementById('cust-chap-class').value;
+      const subj = document.getElementById('cust-chap-subject').value.trim();
+      const url = document.getElementById('cust-chap-url').value.trim() || 'https://ncert.nic.in/textbook.php';
+      const lines = document.getElementById('cust-chap-lines').value.split('\n').map(l => l.trim()).filter(Boolean);
+
+      lines.forEach((line, idx) => {
+        appState.chapters.push({
+          id: `cust-${Date.now()}-${idx}`,
+          classLevel: cls,
+          subject: subj,
+          book: `${subj} Custom`,
+          unit: 'Custom Unit',
+          name: line,
+          estHours: 4,
+          highYield: ['CBSE'],
+          pdfUrl: url,
+          status: 'not_started',
+          completedDate: null
+        });
+      });
+
+      saveState();
+      e.target.reset();
+      closeUploadModal();
+      setActiveClass(cls);
+      switchTab('syllabus');
+      showToast(`Added ${lines.length} chapters for ${subj}!`, 'success');
+    }
+
+    // =========================================================================
+    // 9. EXAM DATES MODAL & BACKUP / CSV EXPORT
+    // =========================================================================
+    function openExamDateModal() {
+      const modal = document.getElementById('exam-modal');
+      const list = document.getElementById('exam-dates-form-list');
+      list.innerHTML = appState.exams.map((ex, idx) => `
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${ex.name}</span>
+          <input type="date" value="${ex.date}" onchange="updateExamDate(${idx}, this.value)" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold" />
+        </div>
+      `).join('');
+      modal.classList.remove('hidden');
+    }
+
+    function closeExamDateModal() {
+      document.getElementById('exam-modal').classList.add('hidden');
+      renderDashboard();
+    }
+
+    function updateExamDate(idx, newDate) {
+      appState.exams[idx].date = newDate;
+      saveState();
+      showToast('Exam date updated!', 'success');
+    }
+
+    function exportBackupJSON() {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', dataStr);
+      a.setAttribute('download', `LakshyaOS_Syllabus_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('Backup JSON downloaded!', 'success');
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && Array.isArray(imported.chapters)) {
+            appState = { ...appState, ...imported };
+            saveState();
+            applyTheme();
+            setActiveClass(appState.activeClass);
+            showToast('Backup restored successfully!', 'success');
+          } else {
+            showToast('Invalid backup JSON file.', 'error');
+          }
+        } catch (err) {
+          showToast('Error parsing JSON file.', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function exportScheduleCSV() {
+      const chapters = getOrderedChaptersForSchedule();
+      let csv = 'Order,Class,Subject,Book,Chapter,Est_Hours,Status,High_Yield\n';
+      chapters.forEach((c, idx) => {
+        csv += `${idx + 1},"Class ${c.classLevel}","${c.subject}","${c.book}","${c.name.replace(/"/g, '""')}",${c.estHours},"${c.status}","${c.highYield.join('/')}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LakshyaOS_Study_Plan_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('Exported Study Plan as CSV!', 'success');
+    }
+
+    function confirmResetProgress() {
+      // Non-blocking reset with instant undo toast
+      localStorage.removeItem(STORAGE_KEY);
+      appState.chapters = buildInitialSyllabus();
+      appState.customLinks = [...DEFAULT_CUSTOM_LINKS];
+      appState.exams = [...DEFAULT_EXAMS];
+      appState.studyLog = generateInitialStudyLog();
+      appState.chapterNotes = {};
+      saveState();
+      refreshCurrentView();
+      showToast('Progress reset to default sample state.', 'info');
+    }
+
+    // =========================================================================
+    // 10. FEATURE UPGRADE 1: IN-APP SPLIT-SCREEN NCERT PDF & LINK VIEWER
+    // =========================================================================
+    function populateReaderDropdowns() {
+      const quickSelect = document.getElementById('reader-quick-select');
+      if (quickSelect) {
+        const bookOpts = NCERT_BOOKS_CATALOG.map(b =>
+          `<option value="${b.url}|Class ${b.classLevel} ${b.title}">[Class ${b.classLevel}] ${b.title} (${b.subject})</option>`
+        ).join('');
+        const customOpts = appState.customLinks.map(l =>
+          `<option value="${l.url}|${l.title}">[Saved Link] ${l.title}</option>`
+        ).join('');
+        quickSelect.innerHTML = `<option value="">📚 Quick-Load Class 11/12 NCERT or CBSE Link...</option>${customOpts}${bookOpts}`;
+      }
+
+      const scratchSelect = document.getElementById('scratchpad-chapter-select');
+      if (scratchSelect) {
+        const chaps = getFilteredChaptersByClass();
+        scratchSelect.innerHTML = chaps.map(c =>
+          `<option value="${c.id}">[Cl ${c.classLevel} ${c.subject}] ${c.name}</option>`
+        ).join('');
+        if (scratchSelect.value) loadChapterScratchpad(scratchSelect.value);
+      }
+    }
+
+    function toggleSplitReader(forceState) {
+      appState.splitReaderOpen = typeof forceState === 'boolean' ? forceState : !appState.splitReaderOpen;
+      saveState();
+      const pane = document.getElementById('split-reader-pane');
+      const btn = document.getElementById('btn-split-reader');
+      if (appState.splitReaderOpen) {
+        pane.classList.remove('hidden');
+        btn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-950');
+        populateReaderDropdowns();
+        const iframe = document.getElementById('reader-iframe');
+        if (iframe.src === 'about:blank' && appState.readerUrl) {
+          loadUrlIntoReader(appState.readerUrl, appState.readerTitle);
+        }
+      } else {
+        pane.classList.add('hidden');
+        btn.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-950');
+      }
+    }
+
+    function openInSplitReader(url, title, chapterId = null) {
+      toggleSplitReader(true);
+      loadUrlIntoReader(url, title);
+      if (chapterId) {
+        const scratchSelect = document.getElementById('scratchpad-chapter-select');
+        if (scratchSelect) {
+          scratchSelect.value = chapterId;
+          loadChapterScratchpad(chapterId);
+        }
+      }
+    }
+
+    function loadUrlIntoReader(url, title = 'Resource Viewer') {
+      appState.readerUrl = url;
+      appState.readerTitle = title;
+      saveState();
+
+      document.getElementById('reader-current-title').textContent = title;
+      document.getElementById('reader-url-input').value = url.startsWith('blob:') ? 'Local Uploaded PDF Document' : url;
+      document.getElementById('reader-external-link').href = url;
+      document.getElementById('reader-iframe').src = url;
+    }
+
+    function loadReaderFromPreset(val) {
+      if (!val) return;
+      const [url, title] = val.split('|');
+      loadUrlIntoReader(url, title);
+    }
+
+    function handleReaderUrlSubmit(e) {
+      e.preventDefault();
+      const url = document.getElementById('reader-url-input').value.trim();
+      if (url) {
+        loadUrlIntoReader(url, 'Custom Web / PDF Resource');
+        showToast('Loaded URL into Split Reader!', 'info');
+      }
+    }
+
+    function handleLocalPdfUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      loadUrlIntoReader(blobUrl, `📄 ${file.name}`);
+      document.getElementById('reader-iframe-notice').classList.add('hidden');
+      showToast(`Opened "${file.name}" in Split Reader!`, 'success');
+    }
+
+    function loadChapterScratchpad(chapterId) {
+      const textarea = document.getElementById('scratchpad-textarea');
+      textarea.value = appState.chapterNotes[chapterId] || '';
+    }
+
+    function saveChapterScratchpad() {
+      const chapterId = document.getElementById('scratchpad-chapter-select').value;
+      if (!chapterId) return;
+      appState.chapterNotes[chapterId] = document.getElementById('scratchpad-textarea').value;
+      saveState();
+      const status = document.getElementById('scratchpad-save-status');
+      status.textContent = 'Saving...';
+      setTimeout(() => { status.textContent = 'Auto-saved ✓'; }, 400);
+    }
+
+    // =========================================================================
+    // 11. FEATURE UPGRADE 2: DAILY STUDY STREAK & 16-WEEK HEATMAP
+    // =========================================================================
+    function logStudyHoursForDate(dateStr, hoursToAdd, note = '') {
+      if (!appState.studyLog[dateStr]) {
+        appState.studyLog[dateStr] = { hours: 0, note: '' };
+      }
+      appState.studyLog[dateStr].hours = Number((appState.studyLog[dateStr].hours + hoursToAdd).toFixed(1));
+      if (note) appState.studyLog[dateStr].note = note;
+      saveState();
+      renderStudyHeatmap();
+    }
+
+    function renderStudyHeatmap() {
+      const grid = document.getElementById('study-heatmap-grid');
+      if (!grid) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const totalDays = 112; // 16 weeks * 7 days
+      let cellsHtml = '';
+      let total16WkHours = 0;
+
+      for (let i = totalDays - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        const entry = appState.studyLog[key];
+        const hrs = entry ? entry.hours : 0;
+        const note = entry && entry.note ? ` • ${entry.note}` : '';
+        total16WkHours += hrs;
+
+        let colorClass = 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+        if (hrs > 0 && hrs < 2) colorClass = 'bg-emerald-200 dark:bg-emerald-900 border-emerald-300 dark:border-emerald-800';
+        else if (hrs >= 2 && hrs < 4) colorClass = 'bg-emerald-400 dark:bg-emerald-700 border-emerald-500 dark:border-emerald-600';
+        else if (hrs >= 4 && hrs < 6) colorClass = 'bg-emerald-500 dark:bg-emerald-500 border-emerald-600 dark:border-emerald-400';
+        else if (hrs >= 6) colorClass = 'bg-emerald-700 dark:bg-emerald-300 border-emerald-800 dark:border-emerald-200';
+
+        const displayDate = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const hoverText = `${displayDate}: ${hrs} hrs logged${note}`;
+
+        cellsHtml += `<div onmouseenter="document.getElementById('heatmap-hover-info').textContent='${hoverText.replace(/'/g, "\\'")}'" title="${hoverText}" class="w-3.5 h-3.5 rounded-[3px] border ${colorClass} transition-transform hover:scale-125 cursor-pointer"></div>`;
+      }
+
+      grid.innerHTML = cellsHtml;
+
+      // Calculate Current & Longest Streak
+      let currentStreak = 0;
+      let checkDate = new Date(today);
+      while (true) {
+        const k = checkDate.toISOString().split('T')[0];
+        if (appState.studyLog[k] && appState.studyLog[k].hours > 0) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          // Allow today to be 0 if yesterday was active
+          if (k === today.toISOString().split('T')[0]) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            continue;
+          }
+          break;
+        }
+      }
+
+      let longestStreak = 0;
+      let running = 0;
+      for (let i = 180; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const k = d.toISOString().split('T')[0];
+        if (appState.studyLog[k] && appState.studyLog[k].hours > 0) {
+          running++;
+          if (running > longestStreak) longestStreak = running;
+        } else {
+          running = 0;
+        }
+      }
+
+      document.getElementById('streak-badge-current').textContent = `🔥 ${currentStreak} Day Streak`;
+      document.getElementById('streak-longest').textContent = `${longestStreak}d`;
+      document.getElementById('streak-total-hrs').textContent = `${total16WkHours.toFixed(1)}h`;
+    }
+
+    function openLogStudyModal() {
+      document.getElementById('log-study-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('log-study-modal').classList.remove('hidden');
+    }
+
+    function closeLogStudyModal() {
+      document.getElementById('log-study-modal').classList.add('hidden');
+    }
+
+    function handleLogStudySession(e) {
+      e.preventDefault();
+      const dateStr = document.getElementById('log-study-date').value;
+      const hrs = parseFloat(document.getElementById('log-study-hours').value) || 1;
+      const note = document.getElementById('log-study-note').value.trim();
+      logStudyHoursForDate(dateStr, hrs, note);
+      e.target.reset();
+      closeLogStudyModal();
+      showToast(`Logged ${hrs} hrs to your study streak!`, 'success');
+    }
+
+    // =========================================================================
+    // 12. FEATURE UPGRADE 3: GOOGLE CALENDAR (.ICS) & QUICK EVENT EXPORT
+    // =========================================================================
+    function openCalendarModal() {
+      document.getElementById('calendar-modal').classList.remove('hidden');
+    }
+
+    function closeCalendarModal() {
+      document.getElementById('calendar-modal').classList.add('hidden');
+    }
+
+    function buildGoogleCalendarQuickUrl(chapter, dateObj, hours) {
+      const start = new Date(dateObj);
+      start.setHours(16, 30, 0, 0);
+      const end = new Date(start.getTime() + Math.round(hours * 60) * 60000);
+      const fmtUtc = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const title = encodeURIComponent(`[LakshyaOS] ${chapter.subject}: ${chapter.name}`);
+      const details = encodeURIComponent(`Target Track: ${appState.examTrack}\nEstimated Duration: ${hours} hrs\nNCERT Link: ${chapter.pdfUrl}`);
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmtUtc(start)}/${fmtUtc(end)}&details=${details}`;
+    }
+
+    function handleExportICS(e) {
+      e.preventDefault();
+      const startTimeStr = document.getElementById('ics-start-time').value || '16:30';
+      const breakMins = parseInt(document.getElementById('ics-break-mins').value, 10) || 0;
+      const scope = document.getElementById('ics-scope').value;
+      const alarmMins = parseInt(document.getElementById('ics-alarm').value, 10) || 0;
+
+      const [startHour, startMin] = startTimeStr.split(':').map(Number);
+      const chapters = getOrderedChaptersForSchedule();
+      if (chapters.length === 0) {
+        showToast('No remaining chapters to export!', 'error');
+        return;
+      }
+
+      const maxDays = scope === 'all' ? 365 : parseInt(scope, 10);
+      const dailyCap = appState.scheduler.dailyHours;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let icsLines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//LakshyaOS//CBSE JEE NEET Study Planner//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH'
+      ];
+
+      const fmtICSDate = d => {
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+      };
+
+      let dayOffset = 0;
+      let hoursUsedToday = 0;
+      let cursorMinutesFromStart = 0;
+
+      chapters.forEach((ch, idx) => {
+        let hrsLeft = ch.estHours;
+        while (hrsLeft > 0 && dayOffset < maxDays) {
+          const spaceToday = dailyCap - hoursUsedToday;
+          if (spaceToday <= 0.01) {
+            dayOffset++;
+            hoursUsedToday = 0;
+            cursorMinutesFromStart = 0;
+            continue;
+          }
+          const allocHrs = Math.min(hrsLeft, spaceToday);
+          const durationMins = Math.max(30, Math.round(allocHrs * 60));
+
+          const evStart = new Date(today);
+          evStart.setDate(today.getDate() + dayOffset);
+          evStart.setHours(startHour, startMin + cursorMinutesFromStart, 0, 0);
+          const evEnd = new Date(evStart.getTime() + durationMins * 60000);
+
+          const summary = `[${ch.subject}] ${ch.name} (${allocHrs.toFixed(1)}h)`;
+          const desc = `Class ${ch.classLevel} ${ch.subject} (${ch.unit})\\nExam Focus: ${ch.highYield.join(', ')}\\nNCERT PDF: ${ch.pdfUrl}`;
+
+          icsLines.push(
+            'BEGIN:VEVENT',
+            `UID:lakshyaos-${ch.id}-${dayOffset}-${idx}@lakshyaos.app`,
+            `DTSTAMP:${fmtICSDate(new Date())}`,
+            `DTSTART:${fmtICSDate(evStart)}`,
+            `DTEND:${fmtICSDate(evEnd)}`,
+            `SUMMARY:${summary.replace(/,/g, '\\,')}`,
+            `DESCRIPTION:${desc.replace(/,/g, '\\,')}`
+          );
+
+          if (alarmMins > 0) {
+            icsLines.push(
+              'BEGIN:VALARM',
+              'ACTION:DISPLAY',
+              `DESCRIPTION:Study Session Reminder: ${summary}`,
+              `TRIGGER:-PT${alarmMins}M`,
+              'END:VALARM'
+            );
+          }
+
+          icsLines.push('END:VEVENT');
+
+          hoursUsedToday += allocHrs;
+          cursorMinutesFromStart += durationMins + breakMins;
+          hrsLeft -= allocHrs;
+        }
+      });
+
+      icsLines.push('END:VCALENDAR');
+
+      const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LakshyaOS_Study_Schedule_${new Date().toISOString().slice(0, 10)}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      closeCalendarModal();
+      showToast('Downloaded LakshyaOS_Study_Schedule.ics!', 'success');
+    }
+
+    // =========================================================================
+    // 13. POMODORO FOCUS TIMER & SPACED REVISION
+    // =========================================================================
+    let pomoSecondsLeft = 25 * 60;
+    let pomoInterval = null;
+    let pomoRunning = false;
+
+    function renderFocusView() {
+      const chapters = getFilteredChaptersByClass().filter(c => c.status !== 'completed');
+      const select = document.getElementById('pomodoro-chapter-select');
+      select.innerHTML = chapters.length
+        ? chapters.map(c => `<option value="${c.id}">[Class ${c.classLevel} ${c.subject}] ${c.name}</option>`).join('')
+        : `<option value="">All chapters completed! Great job!</option>`;
+
+      document.getElementById('pomo-total-sessions').textContent = appState.pomodoro.sessionsCompleted;
+      document.getElementById('pomo-total-mins').textContent = `${appState.pomodoro.totalMinutes} mins`;
+
+      // Render Revision Queue
+      const revChapters = getFilteredChaptersByClass().filter(c => c.status === 'revision' || c.status === 'completed');
+      const revList = document.getElementById('revision-queue-list');
+      if (revChapters.length === 0) {
+        revList.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center">Complete or flag chapters for revision to populate your spaced repetition queue.</p>`;
+      } else {
+        revList.innerHTML = revChapters.map(ch => `
+          <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-center justify-between gap-3">
+            <div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${getSubjectBadgeColor(ch.subject)}">${ch.subject}</span>
+              <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1">${ch.name}</p>
+              <span class="text-[11px] text-slate-400">${ch.status === 'revision' ? '⚠️ Flagged for Immediate Recall' : '✅ Completed — Ready for 7-Day Review'}</span>
+            </div>
+            <button onclick="updateChapterStatus('${ch.id}', '${ch.status === 'revision' ? 'completed' : 'revision'}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:border-indigo-500 transition">
+              ${ch.status === 'revision' ? '✓ Revised' : '🔁 Flag'}
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function updatePomodoroDisplay() {
+      const m = Math.floor(pomoSecondsLeft / 60).toString().padStart(2, '0');
+      const s = (pomoSecondsLeft % 60).toString().padStart(2, '0');
+      document.getElementById('pomodoro-display').textContent = `${m}:${s}`;
+    }
+
+    function setPomodoroDuration(mins) {
+      clearInterval(pomoInterval);
+      pomoRunning = false;
+      document.getElementById('pomodoro-start-btn').textContent = '▶ Start Session';
+      pomoSecondsLeft = mins * 60;
+      updatePomodoroDisplay();
+    }
+
+    function togglePomodoro() {
+      const btn = document.getElementById('pomodoro-start-btn');
+      if (pomoRunning) {
+        clearInterval(pomoInterval);
+        pomoRunning = false;
+        btn.textContent = '▶ Resume';
+      } else {
+        pomoRunning = true;
+        btn.textContent = '⏸ Pause';
+        pomoInterval = setInterval(() => {
+          if (pomoSecondsLeft > 0) {
+            pomoSecondsLeft--;
+            updatePomodoroDisplay();
+          } else {
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+            btn.textContent = '▶ Start Session';
+            appState.pomodoro.sessionsCompleted += 1;
+            appState.pomodoro.totalMinutes += 25;
+            const todayKey = new Date().toISOString().split('T')[0];
+            logStudyHoursForDate(todayKey, 0.4, 'Pomodoro Focus Session');
+            saveState();
+            renderFocusView();
+            showToast('🎉 Focus session complete! Logged 25 mins to Streak.', 'success');
+          }
+        }, 1000);
+      }
+    }
+
+    function resetPomodoro() {
+      setPomodoroDuration(25);
+    }
+
+    function completePomodoroSession() {
+      const select = document.getElementById('pomodoro-chapter-select');
+      const chapId = select.value;
+      appState.pomodoro.sessionsCompleted += 1;
+      appState.pomodoro.totalMinutes += 25;
+      const todayKey = new Date().toISOString().split('T')[0];
+      logStudyHoursForDate(todayKey, 0.4, 'Completed Pomodoro Block');
+      if (chapId) {
+        updateChapterStatus(chapId, 'completed');
+      } else {
+        saveState();
+      }
+      resetPomodoro();
+      renderFocusView();
+    }
+
+    // =========================================================================
+    // 14. INITIALIZATION ON WINDOW LOAD
+    // =========================================================================
+    window.onload = function () {
+      loadState();
+      applyTheme();
+      document.getElementById('exam-track-select').value = appState.examTrack;
+      setActiveClass(appState.activeClass);
+      switchTab(appState.activeTab || 'dashboard');
+      if (appState.splitReaderOpen) {
+        toggleSplitReader(true);
+      }
+      if (window.lucide) lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
