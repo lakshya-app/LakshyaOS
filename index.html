@@ -279,6 +279,69 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   </style>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#4f46e5" />
+
+<style>
+  #language-select { max-width: 12rem; }
+  @media (max-width: 640px) { #language-select { max-width: 9rem; } }
+</style>
+<script>
+(function(){
+  const LANGUAGE_KEY='lakshyaos_language_v1';
+  const LANGS={
+    en:{Language:'Language',Dashboard:'Dashboard & Countdowns',Scheduler:'Smart Time Scheduler',Syllabus:'Syllabus Tracker',NCERT:'NCERT PDFs & CBSE Links',Focus:'Focus Timer & Revision',Curriculum:'Curriculum & Updates',Feedback:'Feedback',Apply:'Apply Current Pack'},
+    hi:{Language:'भाषा',Dashboard:'डैशबोर्ड और काउंटडाउन',Scheduler:'स्मार्ट टाइम शेड्यूलर',Syllabus:'सिलेबस ट्रैकर',NCERT:'NCERT PDF और CBSE लिंक',Focus:'फोकस टाइमर और रिविज़न',Curriculum:'पाठ्यक्रम और अपडेट',Feedback:'फीडबैक',Apply:'वर्तमान पैक लागू करें'},
+    bn:{Language:'ভাষা',Dashboard:'ড্যাশবোর্ড ও কাউন্টডাউন',Scheduler:'স্মার্ট সময়সূচি',Syllabus:'সিলেবাস ট্র্যাকার',NCERT:'NCERT PDF ও CBSE লিঙ্ক',Focus:'ফোকাস টাইমার ও রিভিশন',Curriculum:'পাঠ্যক্রম ও আপডেট',Feedback:'মতামত',Apply:'বর্তমান প্যাক প্রয়োগ করুন'},
+    as:{Language:'ভাষা',Dashboard:'ডেশব’ৰ্ড আৰু কাউণ্টডাউন',Scheduler:'স্মাৰ্ট সময়সূচী',Syllabus:'চিলেবাছ ট্ৰেকাৰ',NCERT:'NCERT PDF আৰু CBSE লিংক',Focus:'ফ’কাছ টাইমাৰ আৰু পুনৰালোচনা',Curriculum:'পাঠ্যক্ৰম আৰু আপডেট',Feedback:'মতামত',Apply:'বৰ্তমান পেক প্ৰয়োগ কৰক'},
+    gu:{Language:'ભાષા',Dashboard:'ડેશબોર્ડ અને કાઉન્ટડાઉન',Scheduler:'સ્માર્ટ સમયપત્રક',Syllabus:'સિલેબસ ટ્રેકર',NCERT:'NCERT PDF અને CBSE લિંક્સ',Focus:'ફોકસ ટાઈમર અને રિવિઝન',Curriculum:'અભ્યાસક્રમ અને અપડેટ્સ',Feedback:'પ્રતિસાદ',Apply:'વર્તમાન પેક લાગુ કરો'},
+    kn:{Language:'ಭಾಷೆ',Dashboard:'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಮತ್ತು ಕೌಂಟ್‌ಡೌನ್',Scheduler:'ಸ್ಮಾರ್ಟ್ ವೇಳಾಪಟ್ಟಿ',Syllabus:'ಪಠ್ಯಕ್ರಮ ಟ್ರ್ಯಾಕರ್',NCERT:'NCERT PDF ಮತ್ತು CBSE ಲಿಂಕ್‌ಗಳು',Focus:'ಫೋಕಸ್ ಟೈಮರ್ ಮತ್ತು ಪುನರವಲೋಕನ',Curriculum:'ಪಠ್ಯಕ್ರಮ ಮತ್ತು ನವೀಕರಣಗಳು',Feedback:'ಪ್ರತಿಕ್ರಿಯೆ',Apply:'ಪ್ರಸ್ತುತ ಪ್ಯಾಕ್ ಅನ್ವಯಿಸಿ'},
+    ml:{Language:'ഭാഷ',Dashboard:'ഡാഷ്ബോർഡും കൗണ്ട്ഡൗണുകളും',Scheduler:'സ്മാർട്ട് ഷെഡ്യൂളർ',Syllabus:'സിലബസ് ട്രാക്കർ',NCERT:'NCERT PDF, CBSE ലിങ്കുകൾ',Focus:'ഫോക്കസ് ടൈമറും റിവിഷനും',Curriculum:'പാഠ്യപദ്ധതിയും അപ്ഡേറ്റുകളും',Feedback:'ഫീഡ്ബാക്ക്',Apply:'നിലവിലെ പാക്ക് പ്രയോഗിക്കുക'},
+    mr:{Language:'भाषा',Dashboard:'डॅशबोर्ड आणि काउंटडाउन',Scheduler:'स्मार्ट वेळापत्रक',Syllabus:'अभ्यासक्रम ट्रॅकर',NCERT:'NCERT PDF आणि CBSE लिंक',Focus:'फोकस टाइमर आणि पुनरावृत्ती',Curriculum:'अभ्यासक्रम आणि अपडेट्स',Feedback:'अभिप्राय',Apply:'सध्याचे पॅक लागू करा'},
+    ne:{Language:'भाषा',Dashboard:'ड्यासबोर्ड र काउन्टडाउन',Scheduler:'स्मार्ट समयतालिका',Syllabus:'पाठ्यक्रम ट्र्याकर',NCERT:'NCERT PDF र CBSE लिङ्क',Focus:'फोकस टाइमर र पुनरावृत्ति',Curriculum:'पाठ्यक्रम र अपडेट',Feedback:'प्रतिक्रिया',Apply:'हालको प्याक लागू गर्नुहोस्'},
+    or:{Language:'ଭାଷା',Dashboard:'ଡ୍ୟାସବୋର୍ଡ ଓ କାଉଣ୍ଟଡାଉନ୍',Scheduler:'ସ୍ମାର୍ଟ ସମୟସୂଚୀ',Syllabus:'ସିଲାବସ୍ ଟ୍ରାକର୍',NCERT:'NCERT PDF ଓ CBSE ଲିଙ୍କ୍',Focus:'ଫୋକସ୍ ଟାଇମର୍ ଓ ପୁନରାବୃତ୍ତି',Curriculum:'ପାଠ୍ୟକ୍ରମ ଓ ଅପଡେଟ୍',Feedback:'ମତାମତ',Apply:'ବର୍ତ୍ତମାନ ପ୍ୟାକ୍ ଲାଗୁ କରନ୍ତୁ'},
+    pa:{Language:'ਭਾਸ਼ਾ',Dashboard:'ਡੈਸ਼ਬੋਰਡ ਅਤੇ ਕਾਊਂਟਡਾਊਨ',Scheduler:'ਸਮਾਰਟ ਸਮਾਂ-ਸੂਚੀ',Syllabus:'ਸਿਲੇਬਸ ਟ੍ਰੈਕਰ',NCERT:'NCERT PDF ਅਤੇ CBSE ਲਿੰਕ',Focus:'ਫੋਕਸ ਟਾਈਮਰ ਅਤੇ ਰਿਵਿਜ਼ਨ',Curriculum:'ਪਾਠਕ੍ਰਮ ਅਤੇ ਅੱਪਡੇਟ',Feedback:'ਫੀਡਬੈਕ',Apply:'ਮੌਜੂਦਾ ਪੈਕ ਲਾਗੂ ਕਰੋ'},
+    sa:{Language:'भाषा',Dashboard:'फलकं गणना च',Scheduler:'स्मार्ट समय-सारणी',Syllabus:'पाठ्यक्रमानुसन्धानम्',NCERT:'NCERT PDF तथा CBSE-सन्धयः',Focus:'एकाग्रता-कालकः पुनरावृत्तिश्च',Curriculum:'पाठ्यक्रमः अद्यतनानि च',Feedback:'प्रतिपुष्टिः',Apply:'वर्तमान-सञ्चिका प्रयोजयतु'},
+    ta:{Language:'மொழி',Dashboard:'டாஷ்போர்டு மற்றும் கவுண்ட்டவுன்',Scheduler:'ஸ்மார்ட் நேர அட்டவணை',Syllabus:'பாடத்திட்ட கண்காணிப்பு',NCERT:'NCERT PDF மற்றும் CBSE இணைப்புகள்',Focus:'ஃபோகஸ் டைமர் மற்றும் மறுபயிற்சி',Curriculum:'பாடத்திட்டம் மற்றும் புதுப்பிப்புகள்',Feedback:'கருத்து',Apply:'தற்போதைய தொகுப்பைப் பயன்படுத்து'},
+    te:{Language:'భాష',Dashboard:'డ్యాష్‌బోర్డ్ మరియు కౌంట్‌డౌన్',Scheduler:'స్మార్ట్ టైమ్ షెడ్యూలర్',Syllabus:'సిలబస్ ట్రాకర్',NCERT:'NCERT PDF మరియు CBSE లింకులు',Focus:'ఫోకస్ టైమర్ మరియు పునశ్చరణ',Curriculum:'పాఠ్య ప్రణాళిక మరియు నవీకరణలు',Feedback:'అభిప్రాయం',Apply:'ప్రస్తుత ప్యాక్ వర్తింపజేయండి'},
+    ur:{Language:'زبان',Dashboard:'ڈیش بورڈ اور کاؤنٹ ڈاؤن',Scheduler:'اسمارٹ ٹائم شیڈیولر',Syllabus:'نصاب ٹریکر',NCERT:'NCERT PDF اور CBSE لنکس',Focus:'فوکس ٹائمر اور دہرائی',Curriculum:'نصاب اور اپ ڈیٹس',Feedback:'رائے',Apply:'موجودہ پیک لاگو کریں'},
+    sd:{Language:'ٻولي',Dashboard:'ڊيش بورڊ ۽ ڪائونٽ ڊائون',Scheduler:'سمارٽ ٽائيم شيڊيولر',Syllabus:'نصاب ٽريڪر',NCERT:'NCERT PDF ۽ CBSE لنڪس',Focus:'فوڪس ٽائمر ۽ ورجاءُ',Curriculum:'نصاب ۽ اپڊيٽس',Feedback:'راءِ',Apply:'موجوده پيڪ لاڳو ڪريو'},
+    ks:{Language:'زَبان',Dashboard:'ڈیش بورڈ تہٕ کاؤنٹ ڈاؤن',Scheduler:'سمارٹ ٹایم شیڈیولر',Syllabus:'نصاب ٹریکر',NCERT:'NCERT PDF تہٕ CBSE لنکس',Focus:'فوکس ٹایمر تہٕ دہرٲی',Curriculum:'نصاب تہٕ اپڈیٹس',Feedback:'رائے',Apply:'موجودہ پیک لاگو کٔرِو'},
+    kok:{Language:'भास',Dashboard:'डॅशबोर्ड आनी काउंटडावन',Scheduler:'स्मार्ट वेळापत्रक',Syllabus:'अभ्यासक्रम ट्रॅकर',NCERT:'NCERT PDF आनी CBSE लिंक्स',Focus:'फोकस टायमर आनी उजळणी',Curriculum:'अभ्यासक्रम आनी अपडेट्स',Feedback:'अभिप्राय',Apply:'सद्य पॅक लागू करात'},
+    mai:{Language:'भाषा',Dashboard:'डैशबोर्ड आ काउंटडाउन',Scheduler:'स्मार्ट समय-सारणी',Syllabus:'पाठ्यक्रम ट्रैकर',NCERT:'NCERT PDF आ CBSE लिंक',Focus:'फोकस टाइमर आ पुनरावृत्ति',Curriculum:'पाठ्यक्रम आ अपडेट',Feedback:'प्रतिक्रिया',Apply:'वर्तमान पैक लागू करू'},
+    mni:{Language:'লোইশিং',Dashboard:'ডেশবোর্ড অমসুং কাউন্টডাউন',Scheduler:'স্মার্ট টাইম শিডিউলার',Syllabus:'সিলেবাস ট্রেকর',NCERT:'NCERT PDF অমসুং CBSE লিংক',Focus:'ফোকস টাইমর অমসুং রিভিশন',Curriculum:'কারিকুলম অমসুং আপডেট',Feedback:'ফিডব্যাক',Apply:'বর্তমান প্যাক শেমজিনবিয়ু'},
+    sat:{Language:'ᱯᱟᱹᱨᱥᱤ',Dashboard:'ᱰᱟᱥᱵᱚᱨᱰ ᱟᱨ ᱠᱟᱣᱩᱱᱴᱰᱟᱣᱩᱱ',Scheduler:'ᱥᱢᱟᱨᱴ ᱥᱮᱴᱤᱝ',Syllabus:'ᱥᱤᱞᱮᱵᱟᱥ ᱴᱨᱮᱠᱟᱨ',NCERT:'NCERT PDF ᱟᱨ CBSE ᱞᱤᱝᱠ',Focus:'ᱯᱷᱚᱠᱟᱥ ᱴᱟᱭᱢᱟᱨ ᱟᱨ ᱨᱤᱵᱷᱤᱥᱚᱱ',Curriculum:'ᱠᱟᱹᱨᱤᱠᱩᱞᱟᱢ ᱟᱨ ᱟᱯᱰᱮᱴ',Feedback:'ᱯᱨᱚᱛᱤᱠᱨᱤᱭᱟ',Apply:'ᱱᱤᱛᱚᱜ ᱯᱮᱠ ᱞᱟᱹᱜᱩ ᱢᱮ'},
+    doi:{Language:'भाशा',Dashboard:'डैशबोर्ड अर काउंटडाउन',Scheduler:'स्मार्ट समय-सारणी',Syllabus:'पाठ्यक्रम ट्रैकर',NCERT:'NCERT PDF अर CBSE लिंक',Focus:'फोकस टाइमर अर पुनरावृत्ति',Curriculum:'पाठ्यक्रम अर अपडेट',Feedback:'प्रतिक्रिया',Apply:'वर्तमान पैक लागू करूं'},
+    bho:{Language:'भाषा',Dashboard:'डैशबोर्ड आ काउंटडाउन',Scheduler:'स्मार्ट समय सारणी',Syllabus:'पाठ्यक्रम ट्रैकर',NCERT:'NCERT PDF आ CBSE लिंक',Focus:'फोकस टाइमर आ रिवीजन',Curriculum:'पाठ्यक्रम आ अपडेट',Feedback:'फीडबैक',Apply:'वर्तमान पैक लागू करीं'},
+    es:{Language:'Idioma',Dashboard:'Panel y cuenta regresiva',Scheduler:'Planificador inteligente',Syllabus:'Seguimiento del programa',NCERT:'PDF de NCERT y enlaces CBSE',Focus:'Temporizador de enfoque y repaso',Curriculum:'Programa y actualizaciones',Feedback:'Comentarios',Apply:'Aplicar paquete actual'},
+    fr:{Language:'Langue',Dashboard:'Tableau de bord et compte à rebours',Scheduler:'Planificateur intelligent',Syllabus:'Suivi du programme',NCERT:'PDF NCERT et liens CBSE',Focus:'Minuteur de concentration et révision',Curriculum:'Programme et mises à jour',Feedback:'Commentaires',Apply:'Appliquer le pack actuel'},
+    de:{Language:'Sprache',Dashboard:'Dashboard & Countdown',Scheduler:'Intelligenter Zeitplaner',Syllabus:'Lehrplan-Tracker',NCERT:'NCERT-PDFs & CBSE-Links',Focus:'Fokus-Timer & Wiederholung',Curriculum:'Lehrplan & Updates',Feedback:'Feedback',Apply:'Aktuelles Paket anwenden'},
+    pt:{Language:'Idioma',Dashboard:'Painel e contagem regressiva',Scheduler:'Planejador inteligente',Syllabus:'Acompanhamento do currículo',NCERT:'PDFs NCERT e links CBSE',Focus:'Temporizador de foco e revisão',Curriculum:'Currículo e atualizações',Feedback:'Feedback',Apply:'Aplicar pacote atual'},
+    ar:{Language:'اللغة',Dashboard:'لوحة التحكم والعد التنازلي',Scheduler:'مجدول الوقت الذكي',Syllabus:'متابعة المنهج',NCERT:'ملفات NCERT وروابط CBSE',Focus:'مؤقت التركيز والمراجعة',Curriculum:'المنهج والتحديثات',Feedback:'ملاحظات',Apply:'تطبيق الحزمة الحالية'},
+    zh:{Language:'语言',Dashboard:'仪表板和倒计时',Scheduler:'智能时间计划',Syllabus:'课程跟踪',NCERT:'NCERT PDF 和 CBSE 链接',Focus:'专注计时器和复习',Curriculum:'课程与更新',Feedback:'反馈',Apply:'应用当前课程包'},
+    ja:{Language:'言語',Dashboard:'ダッシュボードとカウントダウン',Scheduler:'スマート時間スケジューラー',Syllabus:'シラバストラッカー',NCERT:'NCERT PDFとCBSEリンク',Focus:'集中タイマーと復習',Curriculum:'カリキュラムと更新',Feedback:'フィードバック',Apply:'現在のパックを適用'},
+    ko:{Language:'언어',Dashboard:'대시보드 및 카운트다운',Scheduler:'스마트 시간표',Syllabus:'교과과정 추적',NCERT:'NCERT PDF 및 CBSE 링크',Focus:'집중 타이머 및 복습',Curriculum:'교육과정 및 업데이트',Feedback:'피드백',Apply:'현재 팩 적용'},
+    ru:{Language:'Язык',Dashboard:'Панель и обратный отсчёт',Scheduler:'Умный планировщик',Syllabus:'Трекер программы',NCERT:'PDF NCERT и ссылки CBSE',Focus:'Таймер фокусировки и повторение',Curriculum:'Программа и обновления',Feedback:'Обратная связь',Apply:'Применить текущий пакет'},
+    it:{Language:'Lingua',Dashboard:'Dashboard e conto alla rovescia',Scheduler:'Pianificatore intelligente',Syllabus:'Monitoraggio del programma',NCERT:'PDF NCERT e link CBSE',Focus:'Timer di concentrazione e ripasso',Curriculum:'Programma e aggiornamenti',Feedback:'Feedback',Apply:'Applica pacchetto attuale'},
+    id:{Language:'Bahasa',Dashboard:'Dasbor & hitung mundur',Scheduler:'Penjadwal waktu pintar',Syllabus:'Pelacak silabus',NCERT:'PDF NCERT & tautan CBSE',Focus:'Timer fokus & ulasan',Curriculum:'Kurikulum & pembaruan',Feedback:'Umpan balik',Apply:'Terapkan paket saat ini'},
+    tr:{Language:'Dil',Dashboard:'Gösterge Paneli ve Geri Sayım',Scheduler:'Akıllı Zaman Planlayıcı',Syllabus:'Müfredat Takibi',NCERT:'NCERT PDF ve CBSE bağlantıları',Focus:'Odak Zamanlayıcısı ve Tekrar',Curriculum:'Müfredat ve Güncellemeler',Feedback:'Geri bildirim',Apply:'Mevcut paketi uygula'}
+  };
+  function applyLang(code){
+    const pack=LANGS[code]||LANGS.en;
+    document.documentElement.lang=code==='zh'?'zh-CN':code;
+    document.documentElement.dir=code==='ar'||code==='ur'||code==='sd'||code==='ks'?'rtl':'ltr';
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const key=el.getAttribute('data-i18n');
+      if(pack[key]) el.textContent=pack[key];
+    });
+    const applyBtn=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Apply Current Pack')||b.dataset.i18n==='Apply');
+    if(applyBtn){applyBtn.dataset.i18n='Apply';applyBtn.textContent=pack.Apply;}
+    localStorage.setItem(LANGUAGE_KEY,code);
+    const sel=document.getElementById('language-select');if(sel)sel.value=code;
+  }
+  window.changeLakshyaLanguage=function(code){applyLang(code);showToast((LANGS[code]||LANGS.en).Language+': '+(document.getElementById('language-select')?.selectedOptions?.[0]?.text||code));};
+  window.initLakshyaLanguage=function(){applyLang(localStorage.getItem(LANGUAGE_KEY)||'en');};
+})();
+</script>
+
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
 
@@ -312,6 +375,26 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   <button type="button" onclick="exportBackupJSON()" title="Export backup"
     class="px-2.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-xs font-semibold transition">💾</button>
 </div>
+
+        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+          <span data-i18n="Language" class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">Language</span>
+          <select id="language-select" onchange="changeLakshyaLanguage(this.value)" aria-label="Language"
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <optgroup label="Indian languages">
+              <option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="as">অসমীয়া</option>
+              <option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="mr">मराठी</option>
+              <option value="ne">नेपाली</option><option value="or">ଓଡ଼ିଆ</option><option value="pa">ਪੰਜਾਬੀ</option><option value="sa">संस्कृतम्</option>
+              <option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="ur">اردو</option><option value="sd">سنڌي</option>
+              <option value="ks">کٲشُر</option><option value="kok">कोंकणी</option><option value="mai">मैथिली</option><option value="mni">মৈতৈলোন</option>
+              <option value="sat">ᱥᱟᱱᱛᱟᱲᱤ</option><option value="doi">डोगरी</option><option value="bho">भोजपुरी</option>
+            </optgroup>
+            <optgroup label="International">
+              <option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option>
+              <option value="ar">العربية</option><option value="zh">中文</option><option value="ja">日本語</option><option value="ko">한국어</option>
+              <option value="ru">Русский</option><option value="it">Italiano</option><option value="id">Bahasa Indonesia</option><option value="tr">Türkçe</option>
+            </optgroup>
+          </select>
+        </div>
 
         <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">Class</span>
@@ -1596,8 +1679,8 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 <section id="view-curriculum" class="hidden space-y-5">
 <div class="academic-card">
 <div class="flex flex-wrap items-start justify-between gap-4">
-<div><span class="academic-pill">6–12 ACADEMIC HUB</span><h2 class="text-2xl font-extrabold mt-2">Curriculum, Board Updates & Student Account</h2><p class="text-xs text-slate-500 mt-1">Choose your class, track the current curriculum pack, and keep LakshyaOS aligned with official board updates.</p></div>
-<div class="flex flex-wrap gap-2"><button onclick="openOfficialCurriculum()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Official CBSE Curriculum ↗</button><button onclick="applyCurriculumPack()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Apply Current Pack</button></div>
+<div><span class="academic-pill">6–12 ACADEMIC HUB</span><h2 class="text-2xl font-extrabold mt-2">Curriculum & Board Updates</h2><p class="text-xs text-slate-500 mt-1">Choose your class, track the current curriculum pack, and keep LakshyaOS aligned with official board updates. Your progress stays on this device.</p></div>
+<div class="flex flex-wrap gap-2"><button onclick="openOfficialCurriculum()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Official CBSE Curriculum ↗</button><button onclick="applyCurriculumPack()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold" data-i18n="Apply">Apply Current Pack</button></div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
 <label class="text-xs font-semibold">Class<select id="hub-class" onchange="setActiveClass(this.value);renderAcademicHub()" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2"><option value="6">Class 6</option><option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option><option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option></select></label>
@@ -1610,11 +1693,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 <div class="mt-4 space-y-2 text-xs"><div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900"><b>2026–27 verified updates:</b> CBSE released the Class IX–XII curriculum; Class VI has R3 implementation; CT & AI resources/framework cover Classes III–VIII; Kaushal Bodh is mandatory for VI–VIII.</div>
 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800"><b>Workflow:</b> open the official curriculum → review the change → apply the matching LakshyaOS pack → retain your progress.</div></div>
 <div class="flex flex-wrap gap-2 mt-4"><button onclick="openOfficialCirculars()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Latest CBSE Circulars ↗</button><button onclick="openSkillCurriculum()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Skill Education ↗</button><button onclick="openCTAI()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">CT & AI ↗</button></div></div>
-<div class="academic-card"><h3 class="font-bold">👤 Account & Sync</h3><p class="text-xs text-slate-500 mt-1">Optional cloud account. Guest mode remains available on GitHub Pages.</p><div id="auth-state" class="mt-3"></div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><input id="auth-name" placeholder="Name" class="rounded-xl border px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800"><input id="auth-email" type="email" placeholder="Email" class="rounded-xl border px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800"><input id="auth-password" type="password" placeholder="Password (cloud account)" class="rounded-xl border px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 sm:col-span-2"></div>
-<div class="flex flex-wrap gap-2 mt-3"><button onclick="signUpLakshya()" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Sign Up</button><button onclick="signInLakshya()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Sign In</button><button onclick="signOutLakshya()" class="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-xs font-bold">Sign Out</button></div>
-<p class="text-[10px] text-slate-400 mt-3">Real cloud authentication requires a Supabase project connection. Until configured, LakshyaOS stays in guest/local mode.</p></div>
-</div>
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 <div class="academic-card"><h3 class="font-bold">💬 Feedback</h3><p class="text-xs text-slate-500 mt-1">Tell us what to fix or build next.</p><textarea id="feedback-text" rows="4" placeholder="Your feedback..." class="mt-3 w-full rounded-xl border px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800"></textarea><div class="flex flex-wrap gap-2 mt-2"><select id="feedback-type" class="rounded-lg border px-2 py-2 text-xs"><option>Bug</option><option>Feature request</option><option>Curriculum correction</option><option>General feedback</option></select><button onclick="submitLakshyaFeedback()" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Save Feedback</button></div><p class="text-[10px] text-slate-400 mt-2">Saved locally for now; this avoids exposing a public feedback endpoint. A cloud feedback inbox can be connected later.</p></div>
 <div class="academic-card"><h3 class="font-bold">⭐ Testimonials</h3><p class="text-xs text-slate-500 mt-1">A moderated space for real student/teacher feedback — no invented reviews.</p><div id="testimonial-list" class="mt-3 space-y-2"></div><textarea id="testimonial-text" rows="3" placeholder="Share your experience..." class="mt-3 w-full rounded-xl border px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800"></textarea><button onclick="submitLakshyaTestimonial()" class="mt-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold">Submit Testimonial</button></div>
@@ -1726,10 +1804,9 @@ if(typeof oldUpdate==='function'&&!oldUpdate.__ultimateWrapped){window.updateCha
 </script>
 <!-- END LAKSHYAOS ULTIMATE STUDY OS -->
 \n
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
-const CURRICULUM_KEY='lakshyaos_curriculum_v1', AUTH_KEY='lakshyaos_auth_config_v1';
+const CURRICULUM_KEY='lakshyaos_curriculum_v1';
 const official={curriculum:'https://cbseacademic.nic.in/curriculum_2027.html',circulars:'https://cbseacademic.nic.in/circulars.html',skill:'https://cbseacademic.nic.in/skill-education-curriculum.html',ctai:'https://cbseacademic.nic.in/ct-ai.html'};
 const subjectMap={6:['Mathematics','Science','Social Science','English','Hindi / R1-R2 Language','R3 Language','Computational Thinking & AI','Kaushal Bodh'],7:['Mathematics','Science','Social Science','English','Hindi / R1-R2 Language','R3 Language','Computational Thinking & AI','Kaushal Bodh'],8:['Mathematics','Science','Social Science','English','Hindi / R1-R2 Language','R3 Language','Computational Thinking & AI','Kaushal Bodh'],9:['Mathematics / Mathematics Advanced','Science / Science Advanced','Social Science','Language 1','Language 2','Vocational Education (Kaushal Vikas)','CT & AI Modules','Art / Physical Education'],10:['Mathematics','Science','Social Science','English / Language','Second Language','Skill / Elective','Art / Physical Education'],11:['Physics','Chemistry','Mathematics / Applied Mathematics','English Core','Informatics Practices / Computer Science','Physical Education','Elective'],12:['Physics','Chemistry','Mathematics / Applied Mathematics','English Core','Informatics Practices / Computer Science','Physical Education','Elective']};
 const unitMap={6:['Foundation & Concepts','Core Units','Practice & Application','Revision & Assessment'],7:['Foundation & Concepts','Core Units','Practice & Application','Revision & Assessment'],8:['Foundation & Concepts','Core Units','Practice & Application','Revision & Assessment'],9:['Foundational Concepts','Competency & Application','Case/Source Based Practice','Revision & Assessment'],10:['Core Concepts','Competency & Application','Board Practice','Revision & Assessment']};
@@ -1744,12 +1821,7 @@ window.renderAcademicHub=function(){const cls=String(appState.activeClass||'12')
 window.submitLakshyaFeedback=function(){const t=document.getElementById('feedback-text')?.value.trim(),type=document.getElementById('feedback-type')?.value||'General feedback';if(!t)return showToast('Write feedback first');const a=JSON.parse(localStorage.getItem('lakshyaos_feedback_v1')||'[]');a.unshift({type,text:t,date:new Date().toISOString(),classLevel:appState.activeClass});localStorage.setItem('lakshyaos_feedback_v1',JSON.stringify(a.slice(0,20)));document.getElementById('feedback-text').value='';showToast('Feedback saved on this device');};
 window.submitLakshyaTestimonial=function(){const t=document.getElementById('testimonial-text')?.value.trim();if(!t)return showToast('Write your testimonial first');const a=JSON.parse(localStorage.getItem('lakshyaos_testimonials_v1')||'[]');a.unshift({text:t,date:new Date().toISOString()});localStorage.setItem('lakshyaos_testimonials_v1',JSON.stringify(a.slice(0,10)));document.getElementById('testimonial-text').value='';renderTestimonials();showToast('Saved locally — not publicly published');};
 function renderTestimonials(){const e=document.getElementById('testimonial-list');if(!e)return;const a=JSON.parse(localStorage.getItem('lakshyaos_testimonials_v1')||'[]');e.innerHTML=a.length?a.map(x=>'<div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-xs">“'+String(x.text).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'”<div class="text-[10px] text-slate-400 mt-1">Local draft — not a published testimonial</div></div>').join(''):'<div class="text-xs text-slate-400 p-3 rounded-xl bg-slate-50 dark:bg-slate-800">No testimonials yet. Add real feedback; nothing is fabricated.</div>';}
-function cfg(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch(e){return null}}function sb(){const x=cfg();return x?.url&&x?.anonKey&&window.supabase?window.supabase.createClient(x.url,x.anonKey):null}
-window.signUpLakshya=async()=>{const s=sb(),email=document.getElementById('auth-email')?.value.trim(),password=document.getElementById('auth-password')?.value;if(!s)return showToast('Cloud auth is not configured; guest mode is active');if(!email||!password)return showToast('Enter email and password');const r=await s.auth.signUp({email,password,options:{data:{display_name:document.getElementById('auth-name')?.value.trim()||''}}});if(r.error)return showToast(r.error.message);showToast('Account created — check email if confirmation is enabled');renderAuthState();};
-window.signInLakshya=async()=>{const s=sb(),email=document.getElementById('auth-email')?.value.trim(),password=document.getElementById('auth-password')?.value;if(!s)return showToast('Cloud auth is not configured; guest mode is active');const r=await s.auth.signInWithPassword({email,password});if(r.error)return showToast(r.error.message);showToast('Signed in');renderAuthState();};
-window.signOutLakshya=async()=>{const s=sb();if(!s)return showToast('Guest mode has no cloud account');await s.auth.signOut();renderAuthState();showToast('Signed out');};
-async function renderAuthState(){const e=document.getElementById('auth-state');if(!e)return;const s=sb();if(!s){e.innerHTML='<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs"><b>Guest mode</b><br>Progress stays on this device until cloud auth is configured.</div>';return;}const r=await s.auth.getUser();e.innerHTML=r.data?.user?'<div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-xs"><b>Signed in</b><br>'+r.data.user.email+'</div>':'<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs"><b>Not signed in</b><br>Use Sign Up or Sign In below.</div>';}
-window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();renderAuthState();});
+window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();initLakshyaLanguage();});
 })();
 </script>
 
