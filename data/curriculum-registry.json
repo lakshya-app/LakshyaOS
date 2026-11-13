@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-11-13",
+  "purpose": "Versioned registry foundation for LakshyaOS Boards & Exams. Official sources are authoritative; entries marked source-linked are not claims of verified chapter-level curriculum coverage.",
+  "updateModel": "official-source -> version snapshot -> human-readable diff -> review -> apply",
+  "boards": [],
+  "exams": []
+}
