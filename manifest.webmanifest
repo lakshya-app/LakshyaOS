@@ -1,0 +1,10 @@
+{
+  "name": "LakshyaOS",
+  "short_name": "LakshyaOS",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "description": "Smart syllabus planner, NCERT reader and study focus hub.",
+  "icons": []
+}
