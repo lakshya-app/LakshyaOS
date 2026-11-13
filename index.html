@@ -1909,6 +1909,7 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
     {id:'olympiads',name:'Science / Maths Olympiad Path',group:'Olympiads',organizer:'Multiple official bodies',classes:'6–12',url:'https://olympiads.hbcse.tifr.res.in/'}
   ];
 
+  window.LAKSHYA_P3_BOARDS=BOARDS; window.LAKSHYA_P3_EXAMS=EXAMS;
   const state=()=>{try{return JSON.parse(localStorage.getItem(PHASE3_KEY)||'{}')}catch(e){return {}}};
   const save=x=>localStorage.setItem(PHASE3_KEY,JSON.stringify(x));
   const esc3=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
@@ -2053,8 +2054,8 @@ window.addEventListener('load',()=>{renderAcademicHub();renderTestimonials();ini
   }
   function labels(){
     const p=phase3Profile();
-    const b=(window.BOARDS||[]).find(x=>x.id===p.board);
-    const e=(window.EXAMS||[]).find(x=>x.id===p.exam);
+    const b=(window.LAKSHYA_P3_BOARDS||[]).find(x=>x.id===p.board);
+    const e=(window.LAKSHYA_P3_EXAMS||[]).find(x=>x.id===p.exam);
     return {board:b?.name||p.board||'Board not selected',exam:p.exam==='none'?'No competitive exam':(e?.name||p.exam)};
   }
   function esc3i(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
